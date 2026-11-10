@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+        node: [22, 24]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - name: Smoke test (temporary bridge on port 47681)
+        run: npm run smoke
+      - name: Doctor (informational)
+        run: npm run doctor
+        continue-on-error: true
+      - name: Install panels into a scratch project folder
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/kino/demoProject/.kino-mount"
+          npm run install-panels -- "$RUNNER_TEMP/kino/demoProject"
+          test -f "$RUNNER_TEMP/kino/demoProject/panels/project.ts"
+          grep -q 'PROJECT_ID = "demoProject"' "$RUNNER_TEMP/kino/demoProject/panels/project.ts"
+          test -f "$RUNNER_TEMP/kino/demoProject/thumbs/model.ts"

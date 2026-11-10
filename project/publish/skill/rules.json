@@ -1,0 +1,983 @@
+{
+  "version": 1,
+  "name": "post-copy",
+  "updated": "2026-11-09",
+  "summary": "House rules for ReadyM post copy: read the transcript, promise only what is on screen, search words first on search platforms and hook first on browse platforms, 3 options from 3 angle families, few relevant hashtags, links where each platform tolerates them, founder voice with no dashes and no marketing filler. Voice, hooks and what wins per platform come from the global readym-social-voice skill (measured top posts on our channels and on KCD:MP, Open77 and Speclizer, 2026-11-09): lead with the impossible social moment, name the full game plus 'multiplayer', candid dev voice, access posts drive shares, one working CTA.",
+  "voice": {
+    "banned": [
+      "revolutionary",
+      "industry-leading",
+      "thrilled to announce",
+      "excited to share",
+      "valued community",
+      "game-changer",
+      "game changer",
+      "unlock",
+      "unleash",
+      "elevate",
+      "dive in",
+      "dive into",
+      "delve",
+      "seamless",
+      "seamlessly",
+      "next level",
+      "next-level",
+      "ultimate",
+      "cutting-edge",
+      "groundbreaking",
+      "journey",
+      "embark",
+      "supercharge",
+      "harness",
+      "empower",
+      "leverage",
+      "robust",
+      "immersive experience",
+      "look no further",
+      "you won't believe",
+      "mind-blowing",
+      "buckle up",
+      "without further ado",
+      "in today's video",
+      "hey guys",
+      "testament to",
+      "epic",
+      "insane",
+      "crazy"
+    ],
+    "rules": [
+      "No em-dash (U+2014) or en-dash (U+2013) anywhere. Use a comma, colon, period or plain hyphen.",
+      "Founder voice: a modder explaining to another player. 'We' for ReadyM, 'you' for the viewer.",
+      "Every option carries at least one concrete detail from the transcript: a step, a screen, a version or a number.",
+      "Contractions are fine. Digits for numbers. At most one exclamation mark per option.",
+      "At most one intensifier per option. ALL CAPS only for one word in a hype-tone YouTube title.",
+      "Emoji never replace words. No emoji walls. Counts follow params.emoji.",
+      "At most one of the three options per platform opens with a question.",
+      "No 'easy', 'fast', 'in X minutes' or 'free' unless the transcript and runtime prove it.",
+      "Never fake typos, fake anecdotes or fake urgency to sound human.",
+      "What works now, plus one true limit where it fits. Never invent bugs or modesty.",
+      "Name the game in full and say 'multiplayer' in the title or first line.",
+      "Never reuse a date, build or 'Part x/y' template line across posts.",
+      "At least one concrete noun per option: a place, a player count, a system or a version."
+    ]
+  },
+  "principles": [
+    {
+      "id": "honest-promise",
+      "title": "Promise only what is on screen",
+      "rule": "Every claim, number, version, time and feature in the copy must appear in the video. Build a fact list from the transcript first and write only from it.",
+      "why": "YouTube A/B tests pick winners on watch time share, not CTR, and misleading metadata breaks spam policy. A mismatch loses the viewer after the click.",
+      "refs": [
+        "yt-ab-test-help",
+        "yt-spam-policy",
+        "mrbeast-guide-willison"
+      ],
+      "weight": 3
+    },
+    {
+      "id": "title-thumb-unit",
+      "title": "Title and thumbnail are one unit",
+      "rule": "Look at the chosen thumbnail before writing a title. The title adds what the thumbnail does not say; never repeat the thumbnail text verbatim.",
+      "why": "Viewers read both together. Only 6.3% of breakout videos repeat the title on the thumbnail.",
+      "refs": [
+        "etra-2018-eyetracking",
+        "eden-507k-2026"
+      ],
+      "weight": 3
+    },
+    {
+      "id": "search-words-first",
+      "title": "Lead with the words people search",
+      "rule": "Pick 1 to 2 main search words (for example 'Oblivion Remastered multiplayer server') and place them in the title and the first line of every description and caption.",
+      "why": "YouTube says to feature 1 to 2 main words in title and description. TikTok reads captions, voiceover and on-screen text. LinkedIn's feed model reads what a post is about.",
+      "refs": [
+        "yt-description-tips",
+        "tiktok-ca-search",
+        "li-feed-eng-2026",
+        "air-titles-2026"
+      ],
+      "weight": 3
+    },
+    {
+      "id": "yt-front-load",
+      "title": "Front-load YouTube titles",
+      "rule": "Game name, keyword and payoff inside the first ~50 characters. Total length usually 40 to 70, never over 100.",
+      "why": "Truncation length is not official, so protect the first ~50 chars. 30 to 50 chars did best overall and under 30 in gaming (correlational); how-to titles had a median of 55 chars.",
+      "refs": [
+        "air-titles-2026",
+        "overseeros-howto-2026",
+        "yt-edit-settings-help"
+      ],
+      "weight": 3
+    },
+    {
+      "id": "specific-over-generic",
+      "title": "Specific beats clever",
+      "rule": "Name the real thing: the game, the screen, the step, the version. Prefer a specific frame over a generic formula or adjective.",
+      "why": "In 4M+ 2026 uploads, specific story frames beat generic formulas; plain how-to averaged 1.07x.",
+      "refs": [
+        "vidiq-title-formulas-2026"
+      ],
+      "weight": 3
+    },
+    {
+      "id": "house-voice",
+      "title": "Write like one of us",
+      "rule": "Apply voice.rules and voice.banned to every option, every field, every platform.",
+      "why": "House rule. Hype and filler read as ads; plain specific copy reads as a modder talking.",
+      "refs": [],
+      "weight": 3
+    },
+    {
+      "id": "hashtags-few-relevant",
+      "title": "Few, relevant hashtags",
+      "rule": "Use the count in params.hashtags, capped by platforms.<key>.limits.hashtagsMax. Most specific first, at most one broad tag, never generic tags like #fyp, #viral, #reels or #explore. Never inline in text.",
+      "why": "TikTok says loosely related tags can work against you. Instagram caps at 5 and says hashtags do not raise reach. Meta limits reach for hashtag-heavy captions.",
+      "refs": [
+        "tiktok-ca-search",
+        "businesstoday-ig-5-hashtags",
+        "metricool-hashtags-2026",
+        "meta-spam-2025",
+        "yt-hashtags-help",
+        "threads-api-posts"
+      ],
+      "weight": 3
+    },
+    {
+      "id": "statement-over-question",
+      "title": "Statements, not question titles",
+      "rule": "Do not end YouTube titles with a question. At most one question opener across the three options on any platform.",
+      "why": "Question-ending titles averaged 0.82x; questions were weak in gaming.",
+      "refs": [
+        "vidiq-title-formulas-2026",
+        "air-titles-2026"
+      ],
+      "weight": 2
+    },
+    {
+      "id": "how-to-for-search",
+      "title": "Use how-to wording for searched tasks",
+      "rule": "When the video teaches a task people search for (hosting, installing, joining), one option should use plain how-to wording with the game name.",
+      "why": "How-to titles had a median of 1.60x channel baseline vs 0.99x, credited to search intent. Ranked server tutorials follow this pattern.",
+      "refs": [
+        "overseeros-howto-2026",
+        "vidiq-title-formulas-2026",
+        "ex-yt-rockuzza-howto",
+        "ex-yt-troublechute-series"
+      ],
+      "weight": 2
+    },
+    {
+      "id": "links-out-of-body",
+      "title": "Put links where the platform tolerates them",
+      "rule": "YouTube description and Bluesky body: links fine. Facebook, LinkedIn, Threads: link in firstComment. Instagram and TikTok: 'link in bio' or 'on our YouTube'. X: keep the post link-free and tell the user in notes to reply with the link.",
+      "why": "Non-Premium X link posts had 0% median engagement. Facebook warns links in captions may cut reach and tested link limits. Bluesky says it does not de-promote links.",
+      "refs": [
+        "buffer-x-links-2025",
+        "x-bier-links-2025",
+        "fb-links-comments-gamble",
+        "fb-link-limit-test-2025",
+        "ordinal-li-links",
+        "threads-links-mosseri",
+        "bsky-referrals-2025",
+        "socialinsider-captions-2026"
+      ],
+      "weight": 2
+    },
+    {
+      "id": "caption-length-fit",
+      "title": "Fit caption length to the platform",
+      "rule": "TikTok: under 30 words by default, never over 90. Instagram Reels: 30 to 90 words. Facebook Reels: 30 to 60 words. LinkedIn text: 30+ words.",
+      "why": "TikTok under 30 words 4.90% vs 90+ 3.90%; Reels 30 to 90 words 0.25% vs 0.20%; Facebook Reels 30 to 60 words 0.28% vs 0.15% under 30; LinkedIn text under 30 words 2.40% vs about 3.7%.",
+      "refs": [
+        "socialinsider-captions-2026"
+      ],
+      "weight": 2
+    },
+    {
+      "id": "no-engagement-bait",
+      "title": "No engagement bait",
+      "rule": "Never ask for likes, shares, 'comment YES' or 'agree?'. A comment CTA is one real question tied to the video.",
+      "why": "LinkedIn filters engagement bait; Meta limits spammy captions.",
+      "refs": [
+        "smt-li-feed-2026",
+        "sel-li-engagement-bait-2022",
+        "meta-spam-2025"
+      ],
+      "weight": 2
+    },
+    {
+      "id": "say-it-on-screen",
+      "title": "Match the spoken and on-screen words",
+      "rule": "Reuse the words the speaker says. For short-form, add a notes line asking for the keyword in on-screen text and voiceover.",
+      "why": "TikTok uses voiceover, captions and on-screen text to understand a video; many viewers watch muted.",
+      "refs": [
+        "tiktok-ca-search",
+        "tiktok-ca-elements",
+        "tiktok-recs-2020"
+      ],
+      "weight": 2
+    },
+    {
+      "id": "yt-chapters",
+      "title": "Chapters from the transcript",
+      "rule": "Long-form YouTube descriptions get chapters: 00:00 first, at least 3, ascending, each 10+ seconds, labels in plain words. Use placeholders and say so in notes if timings are unreliable.",
+      "why": "YouTube recommends chapters; manual chapters override automatic ones.",
+      "refs": [
+        "yt-chapters-help",
+        "yt-description-tips",
+        "yt-edit-settings-help"
+      ],
+      "weight": 2
+    },
+    {
+      "id": "three-real-angles",
+      "title": "Three options, three angle families",
+      "rule": "Exactly 3 options per platform, one from each angle family (search, browse, voice). Not three rewordings.",
+      "why": "format.md requires different angles; YouTube A/B tests need meaningfully different variants.",
+      "refs": [
+        "yt-ab-test-help"
+      ],
+      "weight": 2
+    },
+    {
+      "id": "yt-tags-light",
+      "title": "YouTube tags for variants only",
+      "rule": "5 to 10 tags: the main keyword, name variants (obmp, oblivionmp, ob:mp) and common misspellings (oblivion remaster). Each max 100 chars, total max 500.",
+      "why": "YouTube says tags play a minimal role and help mainly with misspellings.",
+      "refs": [
+        "yt-tags-help"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "freshness-tag",
+      "title": "Version or year tag only when true",
+      "rule": "Add a version, month or year to tutorial titles only when it is on screen and current.",
+      "why": "Ranked mod and server tutorials use freshness tags because setups change.",
+      "refs": [
+        "ex-yt-kazzanski-version",
+        "ex-yt-rockuzza-howto",
+        "ex-yt-migrate-save"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "reply-and-pin",
+      "title": "Use the first comment for help, not hashtags",
+      "rule": "firstComment holds the docs link or a real support prompt. Never the hashtag block.",
+      "why": "Replying to comments lifted engagement on every platform Buffer measured.",
+      "refs": [
+        "buffer-engagement-2026"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "original-voice",
+      "title": "Make origin clear",
+      "rule": "Say 'we' and name ReadyM or the mod so it is clear we made the footage and the software.",
+      "why": "Meta and Instagram favour original content and reduce reach for reposts.",
+      "refs": [
+        "meta-original-2026",
+        "fb-unoriginal-2025",
+        "ig-originality-2022",
+        "petapixel-ig-reposts-2026"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "known-links-only",
+      "title": "Facts and links from the content kit only",
+      "rule": "Links, invites, handles, versions, requirements and product facts come only from the obmp-readym-content-kit skill, /publish/knowledge or the video, copied character for character. Use the deepest page that fits. Missing link: leave it out and say so in notes. Never a placeholder, never a guess. Kit section 0 rules apply, and nothing from its Never claim or Internal only lists.",
+      "why": "The panel posts copy.json as is. A guessed docs URL went out in the first run and returned 404.",
+      "refs": [
+        "obmp-content-kit"
+      ],
+      "weight": 3
+    },
+    {
+      "id": "impossible-moment",
+      "title": "Lead with the impossible social moment",
+      "rule": "On short-form and feed posts, the first line and the first 2 seconds show or name something players do together that the single-player game never allowed, in a named place or system. Feature lists, tooling and sysadmin steps belong in tutorials.",
+      "why": "Top posts at KCD:MP, Open77, Speclizer and ours are social moments (hacking real players 612,600; carts together; 4v4). Tooling and numbered clips got 40 to 487 views (measured 2026-11-09).",
+      "refs": [
+        "readym-social-voice",
+        "comp-open77-2026",
+        "comp-kcdmp-2026",
+        "comp-speclizer-2026"
+      ],
+      "weight": 3
+    },
+    {
+      "id": "game-plus-multiplayer",
+      "title": "Full game name plus 'multiplayer'",
+      "rule": "Titles and first lines name the game in full (Oblivion Remastered, Black Myth: Wukong; The Elder Scrolls IV: Oblivion Remastered in descriptions) and say 'multiplayer'. The project name alone is not what newcomers search.",
+      "why": "Open77 titles with 'Cyberpunk 2077 multiplayer' had higher medians: Shorts 1,245 vs 783, videos 1,657 vs 981. KCD:MP titles carry the full game name (measured 2026-11-09).",
+      "refs": [
+        "readym-social-voice",
+        "comp-open77-2026",
+        "comp-kcdmp-2026"
+      ],
+      "weight": 2
+    },
+    {
+      "id": "candid-dev-voice",
+      "title": "What works now, plus one true limit",
+      "rule": "Write as a builder posting from inside the build: what we got working, present tense, plus one true candor line where it fits ('it's a beta, things break'). Never invent bugs or modesty.",
+      "why": "Speclizer's 'very broken and not a lot has been implemented yet' got 1,600,326 views on X. Open77's lowercase 'now works!' captions got 610K to 843K. KCD:MP puts a candor line in every description (measured 2026-11-09).",
+      "refs": [
+        "readym-social-voice",
+        "comp-speclizer-2026",
+        "comp-open77-2026",
+        "comp-kcdmp-2026"
+      ],
+      "weight": 2
+    },
+    {
+      "id": "access-moments",
+      "title": "Access posts drive shares and joins",
+      "rule": "Open beta live, a batch opening, a new server, a release, a countdown: say it with a real number or time and one working link. These are the posts that convert.",
+      "why": "Our highest TikTok share rates (1.0 to 1.7%) are all access posts, against about 0.01% on teasers (measured 2026-11-09, ours).",
+      "refs": [
+        "readym-social-voice",
+        "ours-tiktok-2026-11"
+      ],
+      "weight": 2
+    },
+    {
+      "id": "no-date-template",
+      "title": "No date or build templates",
+      "rule": "Never reuse the same date, build or 'Part x/y' line as a caption or title across posts. Each post names its own moment.",
+      "why": "Open77's monthly TikTok median fell from 26,600 to 627 once captions became a date template (median 944). 'Build.120 Changelog' got 97 views; 'Part 1/6' splits 237 to 812 (measured 2026-11-09).",
+      "refs": [
+        "readym-social-voice",
+        "comp-open77-2026"
+      ],
+      "weight": 2
+    },
+    {
+      "id": "valid-cta",
+      "title": "One CTA, a link that resolves today",
+      "rule": "One CTA per post, where the platform allows a link (description, bio, pinned or first comment, X reply). Use the kit's permanent invites and check every link on the day.",
+      "why": "KCD:MP's best Shorts still link an expired Discord invite, so their peak traffic hits a dead end (measured 2026-11-09).",
+      "refs": [
+        "readym-social-voice",
+        "comp-kcdmp-2026",
+        "obmp-content-kit"
+      ],
+      "weight": 2
+    },
+    {
+      "id": "yt-proof-asset",
+      "title": "YouTube long-form is the proof press embeds",
+      "rule": "Each milestone gets a dated YouTube long-form on the day: 3 to 5 minutes, chaptered, line 1 a premise with the full game name and 'multiplayer', line 2 the candor line or who we are.",
+      "why": "In all three comparables, press embedded the YouTube teaser or explainer, never a TikTok. KCD:MP's 4-minute launch-day video is its biggest (161,210 views) (measured 2026-11-09).",
+      "refs": [
+        "readym-social-voice",
+        "comp-kcdmp-2026",
+        "comp-open77-2026",
+        "comp-speclizer-2026"
+      ],
+      "weight": 2
+    },
+    {
+      "id": "short-cut-length",
+      "title": "Short-form cuts under about 45 seconds",
+      "rule": "Short-form clips stay under about 45 seconds; access and launch posts may run longer. If the clip handed to you is longer, say so in notes.",
+      "why": "Open77's top 5 TikToks run 31 to 61 s. Our 117 to 157 s OB:MP posts got 323 to 925 plays, while the 111 s WukongMP SDK open beta post got 425,100 at 8.96% likes (measured 2026-11-09).",
+      "refs": [
+        "readym-social-voice",
+        "comp-open77-2026",
+        "ours-tiktok-2026-11"
+      ],
+      "weight": 1
+    }
+  ],
+  "platforms": {
+    "youtube": {
+      "label": "YouTube (long-form and Shorts)",
+      "limits": {
+        "title": 100,
+        "text": 5000,
+        "hashtagsMax": 60,
+        "tagsTotal": 500,
+        "tagMax": 100,
+        "titleFrontChars": 50
+      },
+      "hashtags": {
+        "recommended": [
+          2,
+          3
+        ],
+        "placement": "Appended to the description by the panel. The first 3 show above the title. Never in the title."
+      },
+      "structure": [
+        "Title: game + keyword + payoff in the first ~50 chars; statement, not a question.",
+        "Line 1: what the viewer gets, with the 1 to 2 search words.",
+        "Line 2: who we are, one line ('We build OB:MP at ReadyM').",
+        "What you need (bullets when technical).",
+        "Chapters: 00:00 first, 3+, ascending, 10s+ each.",
+        "Links from the content kit: server guide (Installation page), ReadyM Launcher (portal.ready.mp), Discord (discord.gg/obmp).",
+        "Shorts: short hook-first title, 1-line description, 2 hashtags."
+      ],
+      "cta": "After line 2 of the description, never in line 1. Pinned firstComment carries the docs link or a support prompt.",
+      "firstComment": true,
+      "avoid": [
+        "Question-ending titles",
+        "Stacked brackets or pipes",
+        "More than one ALL CAPS word",
+        "Emoji in titles",
+        "Keyword lists in the description",
+        "Time or 'easy' claims the video does not prove",
+        "#shorts as a ritual"
+      ],
+      "unverified": [
+        "Title truncation length (about 70 desktop search, 50 to 60 mobile, vendor only)",
+        "Whether #shorts still affects classification"
+      ],
+      "refs": [
+        "yt-edit-settings-help",
+        "yt-description-tips",
+        "yt-hashtags-help",
+        "yt-tags-help",
+        "yt-chapters-help",
+        "yt-spam-policy",
+        "yt-ab-test-help",
+        "vidiq-title-formulas-2026",
+        "air-titles-2026",
+        "overseeros-howto-2026",
+        "readym-social-voice"
+      ],
+      "wins": [
+        "Milestone or launch day 'one evening on a server': 3 to 5 minutes, chaptered (KCD:MP gameplay teaser 161,210 views, embedded by press).",
+        "Dated explainers and tool walkthroughs: press embeds these, never TikTok (Open77, Speclizer).",
+        "Q&A builds the community: our WukongMP Q&A #1 had 20,196 views at 10.2% likes, our best like rate.",
+        "Concrete nouns after the project name ('Trailer #6 - bosses, bots and next steps!', 5.78% likes) beat label and numbered titles."
+      ],
+      "shortsWins": [
+        "One social moment in 15 to 40 seconds. Organic winners: OB:MP Trailer 4 (36,476, 8.89% likes), open beta LIVE (44,637, 8.35%), parkour and sneaking sync (15,355, 8.38%), LESS THAN 30 MINUTES (20,409, 7.07%).",
+        "Title: the moment, the game, 'multiplayer'. Flops: SDK and open-source explainers (223 to 1,874), POV (293), anything over about 60 s."
+      ],
+      "evidence": "measured 2026-11-09 on ours and 3 comparables; our biggest view counts look boosted (like rates 0.0 to 0.14%)"
+    },
+    "tiktok": {
+      "label": "TikTok",
+      "limits": {
+        "text": 2200,
+        "hashtagsMax": 5
+      },
+      "hashtags": {
+        "recommended": [
+          2,
+          4
+        ],
+        "placement": "Appended after the caption by the panel. Specific first (#OBMP, #OblivionRemastered), at most one broad tag."
+      },
+      "structure": [
+        "Line 1: hook with the keyword in the first words.",
+        "Line 2: one concrete detail from the video.",
+        "Optional CTA: 'Full walkthrough on our YouTube' for tutorials; for clips, Discord via the bio or the pinned comment. One CTA.",
+        "Default under 30 words; never over 90."
+      ],
+      "cta": "End of caption. Links are not clickable in captions, so point to YouTube or the bio.",
+      "firstComment": false,
+      "avoid": [
+        "#fyp, #viral, #foryou",
+        "Keyword lists",
+        "Captions that describe things not in the clip",
+        "Over 90 words",
+        "'Part 1/6' splits",
+        "The same date or build line on every post",
+        "Information-only posts with no moment (roadmap, holiday, Q&A teaser)"
+      ],
+      "unverified": [
+        "Hashtag cap of 5 (vendor and press reports, no TikTok statement)",
+        "Vendor claims of a 4,000-char caption"
+      ],
+      "refs": [
+        "tiktok-ca-search",
+        "tiktok-ca-elements",
+        "tiktok-recs-2020",
+        "tiktok-search-insights-support",
+        "planoly-tiktok-5-2025",
+        "sel-tiktok-hashtags",
+        "socialinsider-captions-2026",
+        "readym-social-voice"
+      ],
+      "wins": [
+        "Impossible moment, 'it works now', a lore line, access posts with real numbers, build POV with creators tagged.",
+        "Under about 45 s; access and launch posts can run longer (WukongMP SDK open beta, 111 s, 425,100 plays at 8.96% likes).",
+        "Follow-through within days ('Next: Sandevistan'). Information-only posts flop (dev diary Q&A, roadmap, holiday: 348 to 925 plays).",
+        "Followers convert badly (Open77: 943 followers on about 4.43M views), so the CTA points to Discord via bio or the pinned comment."
+      ],
+      "evidence": "measured 2026-11-09; OB:MP TikTok like and share rates suggest boosting, so organic OB:MP hook evidence is thin"
+    },
+    "instagram": {
+      "label": "Instagram Reels",
+      "limits": {
+        "text": 2200,
+        "hashtagsMax": 5,
+        "foldChars": 125
+      },
+      "hashtags": {
+        "recommended": [
+          1,
+          3
+        ],
+        "placement": "Appended to the caption by the panel. Not in a comment: search reads captions."
+      },
+      "structure": [
+        "First ~125 chars: hook plus keyword.",
+        "1 to 3 short lines on what the Reel shows.",
+        "CTA line.",
+        "30 to 90 words."
+      ],
+      "cta": "'Full guide: link in bio' or 'on our YouTube'. Links are not clickable in captions or comments.",
+      "firstComment": true,
+      "avoid": [
+        "#reels, #explore and other generic tags",
+        "Hashtag block in the first comment",
+        "Reposted or unoriginal clips",
+        "Clickable-link promises"
+      ],
+      "unverified": [
+        "Fold at about 125 chars (vendor observation)",
+        "Cap of 5: announced Dec 2025 but the Graph API doc still says 30"
+      ],
+      "refs": [
+        "businesstoday-ig-5-hashtags",
+        "creatorflow-ig-hashtags",
+        "ig-graph-media-api",
+        "metricool-hashtags-2026",
+        "socialinsider-captions-2026",
+        "hootsuite-ig-seo",
+        "kontentino-ig-search",
+        "circleboom-ig-30-2026",
+        "ig-originality-2022",
+        "readym-social-voice"
+      ],
+      "wins": [
+        "No data (login wall). Reuse the TikTok cut and hook; read Insights after 10 posts."
+      ],
+      "evidence": "unverified"
+    },
+    "facebook": {
+      "label": "Facebook (Reels and feed)",
+      "limits": {
+        "title": 255,
+        "text": 63206
+      },
+      "hashtags": {
+        "recommended": [
+          0,
+          2
+        ],
+        "placement": "Appended by the panel. Never a block of tags."
+      },
+      "structure": [
+        "Reels: a title (same promise as the YouTube title, shorter) plus a 30 to 60 word caption.",
+        "Feed: 2 to 4 plain lines with the video uploaded natively.",
+        "Say 'we' so the footage reads as original."
+      ],
+      "cta": "Link in firstComment, never in the caption body.",
+      "firstComment": true,
+      "avoid": [
+        "Links in the caption",
+        "Long distracting captions",
+        "Many hashtags",
+        "Text unrelated to the video",
+        "'Share if' bait"
+      ],
+      "unverified": [
+        "Reels title limit of 255 (vendor API docs)",
+        "Current status of the 2-link-posts-a-month test"
+      ],
+      "refs": [
+        "meta-spam-2025",
+        "meta-original-2026",
+        "fb-unoriginal-2025",
+        "fb-links-comments-gamble",
+        "fb-link-limit-test-2025",
+        "socialinsider-captions-2026",
+        "ayrshare-char-limits",
+        "readym-social-voice"
+      ],
+      "wins": [
+        "No data. Lowest priority: native video, link in the first comment."
+      ],
+      "evidence": "unverified"
+    },
+    "linkedin": {
+      "label": "LinkedIn",
+      "limits": {
+        "text": 3000,
+        "foldChars": 140
+      },
+      "hashtags": {
+        "recommended": [
+          0,
+          3
+        ],
+        "placement": "Appended at the end by the panel."
+      },
+      "structure": [
+        "Line 1 stands alone above the fold: what we built or shipped, named plainly.",
+        "2 to 4 short paragraphs: what the video shows, who it is for, one honest detail from building it.",
+        "Optional closing question that people in the field can answer."
+      ],
+      "cta": "Link in firstComment by default; a closing question only if it is real.",
+      "firstComment": true,
+      "avoid": [
+        "'Agree?' or 'Comment X'",
+        "One-word-per-line posts",
+        "Humblebrag openers",
+        "Video paired with unrelated text"
+      ],
+      "unverified": [
+        "Fold at about 140 chars mobile and 210 desktop",
+        "Size of any link penalty (studies conflict)"
+      ],
+      "refs": [
+        "li-post-help",
+        "li-feed-eng-2026",
+        "smt-li-feed-2026",
+        "sel-li-engagement-bait-2022",
+        "ordinal-li-links",
+        "socialinsider-captions-2026",
+        "buffer-engagement-2026",
+        "readym-social-voice"
+      ],
+      "wins": [
+        "Msk's profile, founder voice: a dated milestone in players or servers (not signups), one honest lesson, link in the first comment."
+      ],
+      "evidence": "unverified for us, no comparable data"
+    },
+    "twitter": {
+      "label": "X",
+      "limits": {
+        "text": 280,
+        "textPremium": 25000,
+        "urlChars": 23,
+        "emojiChars": 2
+      },
+      "hashtags": {
+        "recommended": [
+          0,
+          1
+        ],
+        "placement": "Appended by the panel and counted in the 280."
+      },
+      "structure": [
+        "One or two sentences, fact first, video uploaded natively.",
+        "Long length: 3 to 5 posts in thread, each understandable alone.",
+        "No link in the post; notes tells the user to reply with it."
+      ],
+      "cta": "In the post text ('video below'); the link goes in a reply the user posts, flagged in notes. X has no firstComment field.",
+      "firstComment": false,
+      "avoid": [
+        "Link-only posts (cards show no headline)",
+        "Hashtag strings",
+        "Emoji (2 chars each)",
+        "Threads padded to look important",
+        "Photo-only feature posts ('Leaderboards implemented!' 9,491 views)",
+        "Detail-only sync clips ('Eyeball sync' 26,814 vs 300K+ for player moments)"
+      ],
+      "unverified": [
+        "X Help Center advice of max 2 hashtags (reported, not read)"
+      ],
+      "refs": [
+        "x-counting-chars",
+        "buffer-x-links-2025",
+        "x-bier-links-2025",
+        "musk-hashtags-2024",
+        "businesstoday-x-ad-hashtags-2025",
+        "techcrunch-x-link-cards-2023",
+        "readym-social-voice"
+      ],
+      "wins": [
+        "Native clip, 1 to 3 sentences (about 100 to 250 chars), first person, candid, 0 to 1 hashtag. Speclizer's first test: 1.6M views on X vs 79K for the same clip on YouTube.",
+        "Milestone with a before and after number ('up to 4v4, previously 1v1s only': 298,894 views, PC Gamer the next day).",
+        "Tease the next long video ('Progress update video this week!').",
+        "Reach comes from reposts: an aggregator's KCD:MP post got 12,986 likes vs 149 on the official post. Draft the pitch in notes; Msk sends it."
+      ],
+      "evidence": "measured 2026-11-09 on comparables; our X accounts are small (about 100 followers)"
+    },
+    "threads": {
+      "label": "Threads",
+      "limits": {
+        "text": 500,
+        "hashtagsMax": 1,
+        "links": 5
+      },
+      "hashtags": {
+        "recommended": [
+          0,
+          1
+        ],
+        "placement": "One topic tag, 1 to 50 chars, no periods or ampersands. Appended by the panel."
+      },
+      "structure": [
+        "Conversational, 1 to 3 short paragraphs.",
+        "End on something people can honestly answer.",
+        "thread only when length is long."
+      ],
+      "cta": "Link in firstComment; a real question at the end.",
+      "firstComment": true,
+      "avoid": [
+        "More than one tag",
+        "Broadcast-style announcements",
+        "Engagement bait"
+      ],
+      "unverified": [],
+      "refs": [
+        "threads-api-posts",
+        "techcrunch-threads-tags-2023",
+        "threads-links-mosseri",
+        "buffer-engagement-2026",
+        "readym-social-voice"
+      ],
+      "wins": [
+        "No data. Adapt the X post and end on a real question."
+      ],
+      "evidence": "unverified"
+    },
+    "bluesky": {
+      "label": "Bluesky",
+      "limits": {
+        "text": 300,
+        "hashtagsMax": 8,
+        "langsMax": 3
+      },
+      "hashtags": {
+        "recommended": [
+          0,
+          2
+        ],
+        "placement": "Appended to the text by the panel and counted in the 300 graphemes. Keep the keyword in plain text too."
+      },
+      "structure": [
+        "One short post: what it is, what the video shows, link.",
+        "Long length: 3 to 5 posts in thread.",
+        "Plain or technical tone."
+      ],
+      "cta": "Link in the body is fine; keep the URL short.",
+      "firstComment": false,
+      "avoid": [
+        "Long URLs that eat the 300",
+        "Hashtag-only keywords",
+        "Hype tone"
+      ],
+      "unverified": [
+        "hashtagsMax 8 is the out-of-text tags field; in-text hashtags have no separate cap beyond 300 graphemes"
+      ],
+      "refs": [
+        "bsky-post-lexicon",
+        "bsky-referrals-2025",
+        "bsky-custom-feeds-2023",
+        "bsky-search-tips-2024",
+        "bsky-whats-next-2026",
+        "readym-social-voice"
+      ],
+      "wins": [
+        "No data. Adapt the X post; game name in plain text."
+      ],
+      "evidence": "unverified"
+    }
+  },
+  "angles": [
+    {
+      "id": "outcome",
+      "family": "search",
+      "name": "Outcome",
+      "when": "Default search option: what the viewer has at the end, with the keyword.",
+      "example": "Host Your Own Oblivion Remastered Multiplayer Server | OB:MP Guide",
+      "refs": [
+        "ex-yt-corukai-skyrim",
+        "ex-yt-troublechute-series",
+        "overseeros-howto-2026"
+      ]
+    },
+    {
+      "id": "obstacle",
+      "family": "search",
+      "name": "Obstacle removed",
+      "when": "The video clearly solves a step people get stuck on. Name the step; only if the transcript shows the fix.",
+      "example": "Oblivion Remastered Server Setup, From .NET Install to First Join",
+      "refs": [
+        "ex-yt-no-port-forward",
+        "ex-yt-actually-works"
+      ]
+    },
+    {
+      "id": "speed",
+      "family": "search",
+      "name": "Time or effort",
+      "when": "Only when the runtime and transcript prove the time claim.",
+      "example": "OB:MP Server Setup in [proven minutes] Minutes",
+      "refs": [
+        "ex-yt-time-promise",
+        "vidiq-title-formulas-2026"
+      ]
+    },
+    {
+      "id": "proof",
+      "family": "browse",
+      "name": "Show it working",
+      "when": "The video has a strong visual moment: the admin panel, players joining, the server running.",
+      "example": "Our OB:MP Admin Panel, Page by Page",
+      "refs": [
+        "vidiq-title-formulas-2026"
+      ]
+    },
+    {
+      "id": "play-together",
+      "family": "browse",
+      "name": "Play together",
+      "when": "Audience is players. Lead with the social outcome, then the how.",
+      "example": "Oblivion Remastered, with your friends in Cyrodiil too. Here's how to host it.",
+      "refs": [
+        "air-titles-2026"
+      ]
+    },
+    {
+      "id": "curiosity",
+      "family": "browse",
+      "name": "Honest curiosity",
+      "when": "Browse feeds. Open a gap the video closes in the first seconds. No bait, no question title on YouTube.",
+      "example": "The 3 Things You Need to Host OB:MP",
+      "refs": [
+        "ex-yt-hardware-haven",
+        "vidiq-title-formulas-2026"
+      ]
+    },
+    {
+      "id": "builder",
+      "family": "voice",
+      "name": "From the team",
+      "when": "Always one option. We made it; here is how to use it. Strongest on LinkedIn, X, Bluesky.",
+      "example": "We Built Oblivion Multiplayer. Here's How to Host It",
+      "refs": [
+        "meta-original-2026",
+        "li-feed-eng-2026"
+      ]
+    },
+    {
+      "id": "impossible-moment",
+      "family": "browse",
+      "name": "Impossible moment",
+      "when": "Short-form and feeds, when the clip shows players doing something the single-player game never allowed. Name the moment and the place first, then the game and 'multiplayer'.",
+      "example": "Parkour and co-op sneaking sync in OblivionMP",
+      "refs": [
+        "readym-social-voice",
+        "comp-open77-2026",
+        "ours-yt-2026-11"
+      ]
+    },
+    {
+      "id": "access",
+      "family": "browse",
+      "name": "Access moment",
+      "when": "Open beta live, a batch opening, a new server, a release or a countdown. A real number or time and one working link.",
+      "example": "Batch 4 of WukongMP alpha opens in LESS THAN 30 MINUTES!",
+      "refs": [
+        "readym-social-voice",
+        "ours-tiktok-2026-11"
+      ]
+    },
+    {
+      "id": "candid-build",
+      "family": "voice",
+      "name": "Candid build update",
+      "when": "X, YouTube descriptions and dev updates. What we got working, a before and after number if there is one, plus one true limit.",
+      "example": "We got [system from the video] working in Oblivion Remastered multiplayer. Still rough in [true limit from the video], fixing that next.",
+      "refs": [
+        "readym-social-voice",
+        "comp-speclizer-2026"
+      ]
+    }
+  ],
+  "params": {
+    "defaults": {
+      "tone": "plain",
+      "length": "medium",
+      "cta": "watch",
+      "emoji": "none",
+      "humanize": 2
+    },
+    "tone": {
+      "plain": "State what it is and what you get. Adjectives only when they carry a fact.",
+      "hype": "Energy from facts and verbs. Allows one ALL CAPS word in a YouTube title and one exclamation mark per option. No banned words, no claims beyond the video.",
+      "dry-funny": "One understated line per option about the game or modding life. Never at the viewer's expense. Search words still lead on YouTube.",
+      "technical": "Name parts exactly as shown: runtime version, ports, config files, admin panel pages. Best for server hosts on YouTube, LinkedIn, Bluesky."
+    },
+    "length": {
+      "short": {
+        "youtube": "2 lines + chapters + links",
+        "tiktok": "under 30 words",
+        "instagram": "about 30 words",
+        "facebook": "about 30 words",
+        "linkedin": "under 600 chars",
+        "twitter": "one sentence",
+        "threads": "one short paragraph",
+        "bluesky": "one short post"
+      },
+      "medium": {
+        "youtube": "3 short paragraphs + chapters + links",
+        "tiktok": "30 to 60 words",
+        "instagram": "30 to 90 words",
+        "facebook": "30 to 60 words",
+        "linkedin": "600 to 1300 chars",
+        "twitter": "single post up to 280",
+        "threads": "up to 500 chars",
+        "bluesky": "single post up to 300"
+      },
+      "long": {
+        "youtube": "full write-up up to about 2000 chars: requirements, steps, troubleshooting",
+        "tiktok": "max 90 words",
+        "instagram": "max 90 words",
+        "facebook": "max 90 words",
+        "linkedin": "up to 3000 chars",
+        "twitter": "thread of 3 to 5 posts",
+        "threads": "thread of 3 to 5 posts",
+        "bluesky": "thread of 3 to 5 posts"
+      }
+    },
+    "cta": {
+      "none": "No ask. End on the last fact.",
+      "watch": "Point to the full video ('Full walkthrough on our YouTube'); on YouTube point to the next video or playlist.",
+      "comment": "One real question a viewer can answer from experience. Never 'comment YES' or 'agree?'.",
+      "follow": "A true reason to follow ('we post every OB:MP update here').",
+      "link": "Docs or download link placed per links-out-of-body.",
+      "discord": "Our Discord with a true reason; never invent channel names. Placement follows links-out-of-body."
+    },
+    "keywords": "Must-include search words. First keyword inside the first ~50 chars of the YouTube title and in the first line of every description and caption; mention it for on-screen text in notes. Once per title, once or twice per body. Variants go in YouTube tags. Never a keyword list.",
+    "emoji": {
+      "none": {
+        "perOption": 0
+      },
+      "light": {
+        "perOption": 1,
+        "rule": "At a line end, never in a YouTube title, never replacing a word."
+      },
+      "some": {
+        "perOption": 3,
+        "rule": "Up to 3 on TikTok, Instagram, Threads; max 1 on YouTube, LinkedIn, X. X counts each emoji as 2 chars."
+      }
+    },
+    "hashtags": "Target count, capped by platforms.<key>.limits.hashtagsMax (Threads 1, Instagram 5, TikTok 5). 0 is valid. Specific first, at most one broad tag, no generic tags, never inline in text.",
+    "language": "BCP-47 code. Write natively, do not translate idioms. Keep proper names unchanged: Oblivion Remastered, OB:MP, ReadyM, WukongMP. Use local search words for multiplayer and server. For non-English Bluesky posts add a notes line to set the post language.",
+    "humanize": {
+      "0": "Clean neutral copy. Banned list and dash rule still apply.",
+      "1": "House voice: contractions, plain verbs, no hype.",
+      "2": "Plus 'we' and one maker's detail from the transcript.",
+      "3": "Plus one honest founder aside (what was hard, what we changed), uneven sentence lengths, fragments allowed. Never fake typos or stories."
+    },
+    "audience": {
+      "server-hosts": "Requirements and steps up front, technical names exact.",
+      "players": "Lead with playing together; light on setup.",
+      "modders": "What is under the hood, tooling, how it fits other mods.",
+      "industry": "What ReadyM does for single-player games and why it matters; LinkedIn first."
+    },
+    "notes": "User free text. Follow it unless it breaks a hard rule (honesty, limits, dashes, banned words); then follow the rule and explain in that platform's notes."
+  }
+}

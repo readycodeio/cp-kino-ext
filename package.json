@@ -1,0 +1,29 @@
+{
+  "name": "cp-kino-ext",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kino panels (Terminal, YT Downloader, Voiceover, Thumbnails, Publish) and the local bridge they talk to. macOS and Windows 11.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.6"
+  },
+  "scripts": {
+    "start": "node bridge/server.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "install-panels": "node scripts/install-panels.mjs",
+    "pull-panels": "node scripts/pull-panels.mjs",
+    "check": "node scripts/check.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "postinstall": "node scripts/postinstall.mjs"
+  },
+  "dependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.77.0",
+    "@kevinwatt/yt-dlp-mcp": "0.10.2",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "node-pty": "1.1.0",
+    "ws": "8.22.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.11"
+  }
+}
