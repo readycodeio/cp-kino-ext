@@ -2,7 +2,7 @@
 //
 // - panels/ is copied to <project>/panels/ and replaces older copies (Kino keeps project history).
 // - panels/project.ts is written for that project (its id and folder), since panels cannot ask Kino for them.
-// - project/ (house skills, thumbnail model and art, brand) is added where missing. With --update it is
+// - project/ (house skills, thumbnail model, art and ornaments) is added where missing. With --update it is
 //   refreshed too, except the user's own files: thumbs/designs.json, publish/plan.json, publish/copy.json
 //   and publish/knowledge/.
 import path from "node:path";

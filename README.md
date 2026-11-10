@@ -73,7 +73,7 @@ Open a new terminal afterwards so the new PATH applies. You don't need a compile
 
    - Instead of an id you can pass the project folder.
    - `--dry-run` shows the changes without making them.
-   - `--update` also refreshes the shared project files (brand, thumbnail model, skills).
+   - `--update` also refreshes the shared project files (skills, thumbnail model and art).
    - Your own data is never overwritten: `thumbs/designs.json`, `publish/plan.json`, `publish/copy.json` and `publish/knowledge/`.
 
    The installer writes `panels/project.ts` with the project id. Kino syncs the folder, and the panels show up in that project.
@@ -117,7 +117,9 @@ The copy writer follows `project/publish/skill/` and the project's `publish/know
 
 Designs are saved in the project's `thumbs/designs.json`, and renders go to `KinoProjects/Thumbnails`.
 
-The logo, key art and backgrounds are Kino media ids from the ReadyM workspace, set in `panels/thumbs/lib.ts` (`ASSET_IDS`) and `project/brand.ts`. They only resolve in that workspace. In any other workspace, import your own art and swap the ids.
+The logo, key art and backgrounds are Kino media ids from the ReadyM workspace, set in `panels/thumbs/lib.ts` (`ASSET_IDS`). They only resolve in that workspace. In any other workspace, import your own art and swap the ids.
+
+Everything the thumbnail art needs lives under the project's `thumbs/` folder (model, art, palette, ornaments), so it never touches a project's own `brand.ts` or `ui/` files.
 
 ## YT Downloader
 

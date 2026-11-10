@@ -6,8 +6,8 @@
 import { createElement as h } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { loadFont as loadFira } from '@remotion/google-fonts/FiraSans'
-import { c } from '../brand'
-import { CenterRule, Emblem } from '../ui/ornaments'
+import { c } from './palette'
+import { CenterRule, Emblem } from './ui/ornaments'
 import { PRESETS, anchorXY, hAlign, unit } from './model'
 import type { Design, El, HeadlineEl, TextEl, BadgeEl, LogoEl, CardEl, EmblemEl, ImageEl, ArrowEl, StackEl, Background, Shade, FontId } from './model'
 
