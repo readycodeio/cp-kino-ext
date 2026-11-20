@@ -1,178 +1,139 @@
-# cp-kino-ext
+# Kino panels
 
-Our Kino panels plus the small local bridge they need. Works on macOS and Windows 11.
+Five custom panels for [Kino](https://kino.ai), and the small local bridge that lets them reach your machine. Built and used on macOS. Windows 11 and Linux code paths are in place and covered by CI, not yet run on a desktop next to Kino.
 
 | Panel | What it does | Needs |
 |---|---|---|
-| Terminal | A real shell (zsh, PowerShell, cmd, Git Bash) inside Kino | bridge |
-| YT Downloader | Downloads YouTube videos with yt-dlp, then opens Kino's import picker with the file path copied | bridge, yt-dlp, deno, ffmpeg |
-| Voiceover | Text to speech in your own ElevenLabs voice, placed on the timeline | bridge, ElevenLabs key, ffprobe |
-| Thumbnails | Designs YouTube thumbnails from the project's art and saves them into Kino | bridge for saving (download works without it) |
-| Publish | Writes post copy, renders platform cuts, schedules posts through Zernio | bridge, Zernio key, ffmpeg |
+| **Terminal** | A real shell inside Kino, starting in the project folder | bridge |
+| **YT Downloader** | Downloads YouTube videos with yt-dlp and hands them to Kino's import | bridge, yt-dlp, deno, ffmpeg. Falls back to Kino's own importer without the bridge |
+| **Voiceover** | Text to speech in your ElevenLabs voice, placed on the timeline | bridge, ElevenLabs key |
+| **Thumbnails** | Design thumbnails by hand or by prompting the agent, check them against tested rules, export | bridge only for one-click prompts and saving into Kino |
+| **Publish** | Post copy for each platform written by the agent, platform cuts, posting and scheduling | bridge for cuts and posting, Zernio key for posting |
 
 All panels follow Kino's light and dark theme.
 
-## How it works
+## Quick start
 
-Panels run inside Kino at `https://kino.ai`. They can't reach your machine on their own, so they talk to a bridge on `127.0.0.1:47680`.
-
-- The bridge only listens on localhost, and only answers requests from `https://kino.ai` sent to `127.0.0.1` or `localhost`.
-- A panel has to pair first. Press **Connect** and the bridge shows a dialog on your machine: **Allow** on macOS, **Yes** on Windows. It stores a hash of the token, never the token itself.
-- Keys stay with the bridge. The ElevenLabs key lives in its own folder and only the voice worker reads it. The Zernio key goes to the bridge's `secrets/` folder. Panels never receive either key.
-- Saving into Kino (thumbnails, voiceovers) goes through Kino desktop's local MCP server on `127.0.0.1:45680`.
-
-## Requirements
-
-- Node.js 20.6 or newer
-- ffmpeg (includes ffprobe), yt-dlp, and deno. yt-dlp needs a JavaScript runtime for YouTube.
-- Kino desktop, for installing panels into a project folder and for saving into Kino
-
-macOS (Homebrew):
+**1. Install the tools.** Node.js 20.6 or newer, plus the programs the panels run.
 
 ```sh
+# macOS
 brew install node ffmpeg yt-dlp deno
 ```
 
-Windows 11 (PowerShell):
-
 ```powershell
+# Windows 11 (PowerShell). Open a new window afterwards so PATH applies.
 winget install OpenJS.NodeJS.LTS Gyan.FFmpeg yt-dlp.yt-dlp DenoLand.Deno
 ```
 
-Open a new terminal afterwards so the new PATH applies. You don't need a compiler: node-pty ships prebuilt binaries for macOS (Apple silicon and Intel) and Windows (x64 and Arm).
-
-## Setup
-
-1. Clone and install:
-
-   ```sh
-   git clone https://github.com/readycodeio/cp-kino-ext.git
-   cd cp-kino-ext
-   npm ci
-   ```
-
-2. Check the machine. This reads no secrets; for keys it only checks that the files exist.
-
-   ```sh
-   npm run doctor
-   ```
-
-3. Start the bridge and leave the window open. Ctrl+C stops it.
-
-   ```sh
-   npm start
-   ```
-
-   You can also double-click `start.command` (macOS) or `start.cmd` (Windows). Both run `npm ci` the first time.
-
-4. Install the panels into a Kino project. Open the project in Kino desktop once, so its folder exists under `Documents/KinoProjects/<projectId>`, then run:
-
-   ```sh
-   npm run install-panels -- <projectId>
-   ```
-
-   - Instead of an id you can pass the project folder.
-   - `--dry-run` shows the changes without making them.
-   - `--update` also refreshes the shared project files (skills, thumbnail model and art).
-   - Your own data is never overwritten: `thumbs/designs.json`, `publish/plan.json`, `publish/copy.json` and `publish/knowledge/`.
-
-   The installer writes `panels/project.ts` with the project id. Kino syncs the folder, and the panels show up in that project.
-
-5. In Kino, open a panel, press **Connect**, then confirm the dialog on your machine.
-
-## Voiceover (ElevenLabs)
-
-The key comes from ElevenLabs' own onboarding, which opens a browser page to approve. It writes `.env.local` into the voice folder. Don't paste the key anywhere else.
-
-macOS:
+**2. Clone and set up.**
 
 ```sh
+git clone https://github.com/readycodeio/cp-kino-ext.git
+cd cp-kino-ext
+npm run setup
+```
+
+Or double-click `setup.command` (macOS) or `setup.cmd` (Windows) in the folder. Setup installs the packages, checks your machine, installs the bridge as a background service that starts when you log in, and adds the panels to every project you have open in Kino desktop. You can close the window when it finishes.
+
+**3. Open a panel in Kino.**
+
+1. Settings → Experimental → turn on **Dynamic panels**.
+2. Open a project, hover its view in the rail, click the layout button → **Panels**, and pick one.
+3. Press **Connect** in the panel and choose **Allow** in the dialog on your computer. You do this once per computer, for all panels.
+
+New projects get the panels on their own about 10 seconds after you open them, as long as the bridge is running.
+
+Already use an agent in Kino chat? Ask it: *"Clone https://github.com/readycodeio/cp-kino-ext and run npm run setup."* It can do steps 1 and 2 for you.
+
+## Everyday commands
+
+| Command | What it does |
+|---|---|
+| `npm run setup` | First install, and again after every `git pull` |
+| `npm run service -- status` | Is the bridge installed and running |
+| `npm run service -- restart` | Restart the bridge |
+| `npm run service -- stop` / `start` | Stop it until the next login, or start it again |
+| `npm run service -- logs` | Last 40 lines of the bridge log |
+| `npm run service -- uninstall` | Remove the background service. Your pairings and keys stay |
+| `npm run service -- unpair` | Revoke every paired panel |
+| `npm run service -- print` | Show what install would write, without installing |
+| `npm run doctor` | Check tools, folders and keys. Reads no secrets |
+| `npm run install-panels -- <projectId>` | Put the panels into one project. `--all` for every open project, `--update` to refresh the agent skills too |
+| `npm start` | Run the bridge in this window instead of the service, with the log on screen |
+
+## Make it yours
+
+Nothing in the repo is tied to a brand. Your own material lives in your Kino project, where the panels and the agent both read it, and an update never overwrites it:
+
+- **Thumbnails:** `thumbs/brand.json` is your brand kit: logo, colors, fonts and art from your Kino library. Edit it in the panel's Brand tab. Designs are in `thumbs/designs.json`.
+- **Publish:** `publish/knowledge/README.md` is where you describe your voice, facts, links and words to avoid. The agent reads it before writing copy. Your picks and schedule are in `publish/plan.json`.
+- **Voiceover:** pick the voice, model and format in the panel, and change the takes folder there too.
+- **YT Downloader:** pick the downloads folder and the file format (MP4, MKV, MOV; MP3, M4A, WAV) in the panel. Your own yt-dlp config (cookies, proxy) is honored.
+- **Rules the agent follows:** `thumbs/skill/` and `publish/skill/` in the project. They are plain files, tune them per project.
+
+See [docs/panels.md](docs/panels.md) for a walk through each panel.
+
+## How it works
+
+Panels run inside Kino's page. They can edit the project but cannot start a program, write files elsewhere, hold a secret or call Kino's agent tools, so those go through the bridge on `127.0.0.1:47680`. The bridge only answers Kino, only after you approve the pairing dialog, and keeps API keys to itself.
+
+[docs/architecture.md](docs/architecture.md) has the details: what works without the bridge, the security model, every folder and setting.
+
+## Voiceover key
+
+The ElevenLabs key comes from ElevenLabs' own onboarding, which opens a browser page to approve and writes `.env.local` into the voice folder. Don't paste the key anywhere else.
+
+```sh
+# macOS and Linux
 mkdir -p ~/.local/share/elevenlabs-voice && cd ~/.local/share/elevenlabs-voice
 npx -y @elevenlabs/cli@latest onboard connect --env-path .env.local
 ```
 
-Windows (PowerShell):
-
 ```powershell
+# Windows
 New-Item -ItemType Directory -Force "$env:LOCALAPPDATA\elevenlabs-voice" | Out-Null
 cd "$env:LOCALAPPDATA\elevenlabs-voice"
 npx -y @elevenlabs/cli@latest onboard connect --env-path .env.local
 ```
 
-Restart the bridge afterwards.
+Then press **Check again** in the Voiceover panel. Every take uses characters from your ElevenLabs plan; the panel shows the count before you generate.
 
-- **Default voice:** set `voice_id` in the voice config (see the folders table below), or add `ELEVENLABS_VOICE_ID=...` to `.env.local`. With neither, you pick a voice in the panel.
-- **Model and format:** `model_id` and `output_format` in the same config, or `ELEVENLABS_MODEL_ID` and `ELEVENLABS_OUTPUT_FORMAT`.
-- **Cost:** every take uses characters from your ElevenLabs plan. The panel shows the count before you generate.
+## Publishing key
 
-## Publish (Zernio)
+Posting goes through Zernio, a social posting API. Paste your Zernio API key in the Publish panel's Posting setup (the status pill at the top right). The bridge saves it in its own `secrets/` folder and never sends it back to the panel. Nothing is posted, scheduled or uploaded until you confirm it in the panel. Writing copy and rendering cuts work without a key.
 
-Paste your Zernio API key in the Publish panel's **Settings** tab. The bridge saves it to `secrets/zernio.env` in its data folder. On macOS that file is readable only by your user; on Windows it relies on your user profile's permissions.
+## Troubleshooting
 
-Nothing is posted, scheduled or uploaded until you confirm it in the panel.
-
-The copy writer follows `project/publish/skill/` and the project's `publish/knowledge/README.md`. That README points to our content kit, the `obmp-readym-content-kit` agent skill. **The kit is not in this repo on purpose**, because it has internal-only notes and project files sync to Kino's cloud. Install it separately as a global skill on each machine.
-
-## Thumbnails
-
-Designs are saved in the project's `thumbs/designs.json`, and renders go to `KinoProjects/Thumbnails`.
-
-The logo, key art and backgrounds are Kino media ids from the ReadyM workspace, set in `panels/thumbs/lib.ts` (`ASSET_IDS`). They only resolve in that workspace. In any other workspace, import your own art and swap the ids.
-
-Everything the thumbnail art needs lives under the project's `thumbs/` folder (model, art, palette, ornaments), so it never touches a project's own `brand.ts` or `ui/` files.
-
-## YT Downloader
-
-Downloads go to `~/Downloads/Kino YouTube` (`%USERPROFILE%\Downloads\Kino YouTube` on Windows).
-
-## Where things live
-
-| What | macOS | Windows |
-|---|---|---|
-| Bridge data (pairings, `secrets/`) | `~/.local/share/kino-terminal` | `%LOCALAPPDATA%\kino-terminal` |
-| ElevenLabs key folder (`.env.local`) | `~/.local/share/elevenlabs-voice` | `%LOCALAPPDATA%\elevenlabs-voice` |
-| Voice config (`config.json`) | `~/.config/elevenlabs-voice` | `%APPDATA%\elevenlabs-voice` |
-| Voiceover audio | `~/Documents/ElevenLabs Voiceover` | `Documents\ElevenLabs Voiceover` |
-| Kino projects | `~/Documents/KinoProjects` | `Documents\KinoProjects` |
-| Thumbnail and Publish renders | `KinoProjects/Thumbnails`, `KinoProjects/Publish` | same, under `Documents\KinoProjects` |
-
-On Windows, "Documents" is wherever Windows has it, including a OneDrive folder. The bridge looks it up in the registry.
-
-## Environment overrides
-
-All optional. Set them before `npm start`.
-
-| Variable | Default |
+| You see | Do this |
 |---|---|
-| `KINO_TERMINAL_PORT` | `47680` |
-| `KINO_TERMINAL_ORIGINS` | `https://kino.ai` (comma separated) |
-| `KINO_TERMINAL_SHELL` | macOS: your login shell. Windows: pwsh, then Windows PowerShell, then cmd |
-| `KINO_BRIDGE_HOME` | bridge data folder above |
-| `KINO_TTS_DIR`, `KINO_TTS_CONFIG` | ElevenLabs key folder and voice config above |
-| `KINO_DOCUMENTS_DIR`, `KINO_PROJECTS_DIR` | Documents, `Documents/KinoProjects` |
-| `KINO_YTDL_DIR`, `KINO_THUMBS_DIR`, `KINO_PUBLISH_DIR` | download and render folders above |
-| `KINO_FFMPEG`, `KINO_FFPROBE` | found on PATH |
-| `KINO_EXTRA_PATH` | extra folders to search for ffmpeg, yt-dlp and deno |
-| `KINO_MCP_URL` | `http://127.0.0.1:45680/mcp` (Kino desktop) |
-
-## Moving from the old bridge (macOS)
-
-This bridge uses the same data folder as the one in `~/.local/share/kino-terminal`, so your pairings and Zernio key carry over.
-
-1. Stop the old bridge. Only one bridge can hold port 47680.
-2. Run `npm start` here.
-
-Panels from the old setup keep working. To get the latest versions, run `npm run install-panels -- <projectId>`.
-
-## Developing
-
-- `npm run pull-panels -- <projectId>` copies panel edits made inside Kino back into this repo. It never deletes anything, and it never pulls `project.ts` or your data files. Check `git diff` for personal paths or ids before you commit.
-- `npm run check` syntax-checks the bridge, parses every JSON file, and bundles each panel with esbuild.
-- `npm run smoke` starts a throwaway bridge on port 47681 with its own temp folders. It then checks the security guards, every feature's status, and a real shell session. It never touches your running bridge, tokens or keys.
-- CI runs check, smoke, doctor and a test install on macOS and Windows, with Node 22 and 24.
+| "The Kino bridge is not running" | `npm run service -- status`. If it is not installed, `npm run setup`. If it is installed but down, `npm run service -- logs` |
+| The pairing dialog never shows | It can open behind the Kino window. On Linux it needs `zenity` or `kdialog` |
+| "Update the Kino bridge" | `git pull && npm run setup` |
+| `port-in-use` in the log | Another bridge holds the port, usually `npm start` in a terminal. Stop it with Ctrl+C |
+| macOS says a background item was added, or asks to let "node" access Documents or Downloads | Expected the first time. The bridge saves renders, voiceovers and downloads there |
+| A tool is "missing" in a panel | `npm run doctor` names it and the install command. After installing, `npm run service -- restart` |
+| Panels are not in a project's panel list | Open the project in Kino desktop once, then `npm run install-panels -- --all` |
+| Panels broke after you changed Node versions | `npm run setup` again. The service remembers the path to `node` |
 
 ## Known limits
 
-- **Windows** is covered by CI on `windows-latest` (check, smoke with a real PowerShell session, test install). It hasn't yet been run on a Windows 11 desktop alongside Kino. Saving into Kino from Windows (thumbnails, voiceover import) sends Windows paths to Kino's local MCP server, and that is untested.
-- **No autostart.** Start the bridge yourself, or set up a login item or scheduled task if you want one.
-- **Thumbnail art ids** are tied to the ReadyM workspace (see Thumbnails).
+- **Early release.** The bridge and panels are tested offline and on macOS next to Kino. Posting through Zernio and generating with ElevenLabs are tested against stand-ins in this version, not the live services. Open an issue when something breaks.
+- **Windows** is covered by CI (checks, bridge tests with a real PowerShell session, test install). The background start at sign-in and saving into Kino from Windows paths have not been run on a Windows desktop next to Kino.
+- **Linux** has the same status. The bridge needs a compiler for node-pty there, and `zenity` or `kdialog` for the pairing dialog.
+- **Custom panels are an experimental Kino feature.** What a panel can read and control can change between Kino releases.
+- **Pairing trusts every panel you run in Kino**, because all panels share one web origin. Add only team panels you trust. See the security section in [docs/architecture.md](docs/architecture.md).
+
+## Develop
+
+[docs/build-a-panel.md](docs/build-a-panel.md) covers the conventions, the shared bridge client, adding a bridge route and the test loop. `AGENTS.md` is the short version for coding agents.
+
+```sh
+npm run check     # syntax, JSON and an esbuild bundle of every panel
+npm run smoke     # bridge tests on a throwaway port, never touches your bridge or keys
+npm run pull-panels -- <projectId>   # bring edits made inside Kino back into the repo
+```
+
+## License
+
+MIT. See [LICENSE](LICENSE). Icons in the Thumbnails panel are from Material Design Icons (Apache 2.0).

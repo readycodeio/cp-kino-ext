@@ -1,763 +1,24 @@
 // Voiceover: ElevenLabs text to speech inside Kino, Studio style.
-// Pick a voice (your configured default first), write with ElevenLabs syntax, generate a few takes, audition them,
+// Pick a voice from your account, write with ElevenLabs syntax, generate one or more takes, audition them,
 // then put the one you like on the timeline at the playhead or into the library.
 // Speech runs through the local Kino bridge, which hands it to a separate worker process: the
-// ElevenLabs key never reaches this panel or the bridge itself.
+// ElevenLabs key never reaches this panel or the bridge itself. Nothing here works without the bridge.
+// lib.ts holds types, the audio cache and the per-model syntax rules; ui.ts the small controls and the waveform.
 // Built with createElement rather than JSX: generated panels currently hit React #31 with JSX.
-import { Component, createElement as h, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useFps, useRemotionPlayer, useTimelinePosition } from 'kino/panel'
-import { cssVar, useKinoTheme } from '../theme'
-import { IS_MAC, IS_WIN, MACHINE, YOUR_MACHINE, SHOW_IN, PAIR_DIALOG, ALLOW, MOD_ENTER, START_BRIDGE, START_BRIDGE_HINT, MONO_FONT, UI_FONT as PLATFORM_UI_FONT } from '../platform'
-
-const BRIDGE = 'http://127.0.0.1:47680'
-const TOKEN_KEY = 'kino-terminal:token' // shared with the Terminal and YT Downloader panels, device-local
-const PREFS_KEY = 'kino-voiceover:prefs'
-const DRAFT_KEY = 'kino-voiceover:draft'
-const HIDDEN_KEY = 'kino-voiceover:hidden'
-const STYLE_ID = 'kino-vo-css'
-const DEFAULT_MODEL = 'eleven_v4'
-const MODEL_ORDER = [
-	'eleven_v4',
-	'eleven_v4_turbo',
-	'eleven_v3',
-	'eleven_v3_conversational',
-	'eleven_multilingual_v2',
-	'eleven_flash_v2_5',
-	'eleven_turbo_v2_5',
-	'eleven_flash_v2',
-	'eleven_turbo_v2',
-]
-const PHONEME_MODELS = ['eleven_flash_v2', 'eleven_turbo_v2', 'eleven_monolingual_v1']
-const FORMATS = [
-	{ value: 'mp3_44100_192', label: 'MP3 44.1 kHz, 192 kbps' },
-	{ value: 'mp3_44100_128', label: 'MP3 44.1 kHz, 128 kbps' },
-	{ value: 'mp3_44100_96', label: 'MP3 44.1 kHz, 96 kbps' },
-	{ value: 'mp3_22050_32', label: 'MP3 22 kHz, 32 kbps' },
-	{ value: 'wav_48000', label: 'WAV 48 kHz' },
-	{ value: 'wav_44100', label: 'WAV 44.1 kHz' },
-	{ value: 'wav_24000', label: 'WAV 24 kHz' },
-	{ value: 'wav_22050', label: 'WAV 22 kHz' },
-	{ value: 'wav_16000', label: 'WAV 16 kHz' },
-	{ value: 'opus_48000_192', label: 'Opus 48 kHz, 192 kbps' },
-	{ value: 'opus_48000_128', label: 'Opus 48 kHz, 128 kbps' },
-]
-const BATCH_PAGE = 12
-
-const UI_FONT = PLATFORM_UI_FONT
-const MONO = MONO_FONT
-const BG = 'var(--kp-bg)'
-const TEXT = 'var(--kp-text)'
-const DIM = 'var(--kp-dim)'
-const FAINT = 'rgba(var(--kp-ink),0.3)'
-const LINE = 'var(--kp-line)'
-const RED = 'var(--kp-red)'
-const AMBER = 'var(--kp-amber)'
-
-type BridgeState = 'checking' | 'ok' | 'offline' | 'outdated' | 'unpaired' | 'pairing' | 'nokey'
-type Voice = {
-	id: string
-	name: string
-	category: string
-	labels: Record<string, string> | null
-	description: string | null
-	previewUrl: string | null
-	fineTuned: string[]
-	settings: Record<string, number | boolean> | null
-}
-type Model = {
-	id: string
-	name: string
-	description: string | null
-	canUseStyle: boolean
-	canUseSpeakerBoost: boolean
-	maxChars: number | null
-	costFactor: number
-	languages: { id: string; name: string }[]
-}
-type Req = { [key: string]: any }
-type Take = {
-	file: string
-	name: string
-	mtime: number
-	duration: number | null
-	voiceId: string | null
-	voiceName: string | null
-	modelId: string | null
-	outputFormat: string | null
-	characters: number | null
-	characterCost: number | null
-	seed: number | null
-	created: string | null
-	batch: string
-	take: number
-	takes: number
-	source: string
-	mediaId: string | null
-	request: Req | null
-	error?: string
-}
-type Quota = { tier: string | null; used: number; limit: number; resetUnix: number | null }
-type Dict = { id: string; versionId: string; name: string; rules?: number | null; description?: string | null }
-type Fx = { id: string; name: string; description?: string | null }
-type Effects = { filters: Fx[]; environments: Fx[]; noises: Fx[] }
-type VS = { stability: number | null; similarity: number | null; style: number | null; speed: number | null; boost: boolean | null; clone: number | null }
-type Adv = {
-	seed: string
-	language: string
-	normalization: string
-	format: string
-	name: string
-	previous: string
-	next: string
-	dicts: string[]
-	filter: string
-	environment: string
-	sendLevel: number
-	noise: string
-	distance: number | null
-	pan: number
-	pvcAsIvc: boolean
-}
-type Prefs = { voiceId: string; modelId: string; takes: number; vsByVoice: Record<string, VS>; adv: Adv; chips: string }
-type Pending = { text: string; takes: number; startedAt: number; voiceName: string; modelId: string }
-
-const EMPTY_VS: VS = { stability: null, similarity: null, style: null, speed: null, boost: null, clone: null }
-const DEFAULT_ADV: Adv = {
-	seed: '',
-	language: '',
-	normalization: 'auto',
-	format: 'mp3_44100_192',
-	name: '',
-	previous: '',
-	next: '',
-	dicts: [],
-	filter: '',
-	environment: '',
-	sendLevel: 0.3,
-	noise: '',
-	distance: null,
-	pan: 0,
-	pvcAsIvc: false,
-}
-
-class BridgeError extends Error {
-	status: number
-	body: Req
-	constructor(message: string, status: number, body: Req = {}) {
-		super(message)
-		this.status = status
-		this.body = body
-	}
-}
-
-const api = async (path: string, init?: { method?: string; body?: unknown }) => {
-	const token = localStorage.getItem(TOKEN_KEY)
-	if (!token) throw new BridgeError('Not connected.', 401)
-	let response: Response
-	try {
-		response = await fetch(BRIDGE + path, {
-			method: init?.method ?? 'GET',
-			headers: {
-				authorization: `Bearer ${token}`,
-				...(init?.body !== undefined ? { 'content-type': 'application/json' } : {}),
-			},
-			body: init?.body !== undefined ? JSON.stringify(init.body) : undefined,
-		})
-	} catch {
-		throw new BridgeError('The Kino bridge is not running.', 0)
-	}
-	const body = await response.json().catch(() => ({}))
-	if (!response.ok) throw new BridgeError(typeof body.error === 'string' ? body.error : `Request failed (${response.status}).`, response.status, body)
-	return body
-}
-
-const apiBlob = async (path: string) => {
-	const token = localStorage.getItem(TOKEN_KEY)
-	if (!token) throw new BridgeError('Not connected.', 401)
-	let response: Response
-	try {
-		response = await fetch(BRIDGE + path, { headers: { authorization: `Bearer ${token}` } })
-	} catch {
-		throw new BridgeError('The Kino bridge is not running.', 0)
-	}
-	if (!response.ok) {
-		const body = await response.json().catch(() => ({}))
-		throw new BridgeError(typeof body.error === 'string' ? body.error : `Audio request failed (${response.status}).`, response.status, body)
-	}
-	return response.blob()
-}
-
-// ---------- audio cache: blob URL + waveform peaks per file ----------
-type Loaded = { url: string; peaks: number[]; duration: number }
-const audioCache = new Map<string, Promise<Loaded>>()
-const PEAKS = 160
-const loadAudio = (key: string, path: string): Promise<Loaded> => {
-	const hit = audioCache.get(key)
-	if (hit) return hit
-	const entry = apiBlob(path).then(async blob => {
-		const url = URL.createObjectURL(blob)
-		let peaks: number[] = []
-		let duration = 0
-		try {
-			const buffer = await new OfflineAudioContext(1, 1, 44100).decodeAudioData(await blob.arrayBuffer())
-			duration = buffer.duration
-			const data = buffer.getChannelData(0)
-			const step = Math.max(1, Math.floor(data.length / PEAKS))
-			for (let i = 0; i < PEAKS; i++) {
-				let max = 0
-				const end = Math.min(data.length, (i + 1) * step)
-				for (let j = i * step; j < end; j += 2) {
-					const value = Math.abs(data[j])
-					if (value > max) max = value
-				}
-				peaks.push(max)
-			}
-			const top = Math.max(0.01, ...peaks)
-			peaks = peaks.map(value => Math.sqrt(value / top))
-		} catch {
-			peaks = []
-		}
-		return { url, peaks, duration }
-	})
-	entry.catch(() => audioCache.delete(key))
-	audioCache.set(key, entry)
-	if (audioCache.size > 80) {
-		const oldest = audioCache.keys().next().value as string
-		const stale = audioCache.get(oldest)
-		audioCache.delete(oldest)
-		stale?.then(item => URL.revokeObjectURL(item.url)).catch(() => {})
-	}
-	return entry
-}
-const audioPath = (file: string) => `/tts/audio?file=${encodeURIComponent(file)}`
-
-// ---------- helpers ----------
-const readJson = (key: string, fallback: any) => {
-	try {
-		const value = JSON.parse(localStorage.getItem(key) ?? 'null')
-		return value ?? fallback
-	} catch {
-		return fallback
-	}
-}
-const writeJson = (key: string, value: unknown) => {
-	try {
-		localStorage.setItem(key, JSON.stringify(value))
-	} catch {}
-}
-const drop = (object: Req) => Object.fromEntries(Object.entries(object).filter(([, value]) => value !== undefined && value !== null && value !== ''))
-const plain = (text: unknown) => (typeof text === 'string' ? text.replace(/\s*[\u2014\u2013]\s*/g, ', ') : '')
-const pad = (n: number) => String(n).padStart(2, '0')
-const fmtInt = (n: number) => new Intl.NumberFormat('en').format(Math.round(n))
-const fmtSec = (seconds: number | null | undefined) => {
-	if (seconds == null || !Number.isFinite(seconds)) return ''
-	if (seconds < 60) return `${seconds.toFixed(1)}s`
-	const s = Math.round(seconds)
-	return `${Math.floor(s / 60)}:${pad(s % 60)}`
-}
-const fmtTc = (frame: number | null | undefined, fps: number | null | undefined) => {
-	if (frame == null || !fps) return '--:--'
-	const whole = Math.floor(frame / fps)
-	const f = Math.round(frame - whole * fps)
-	const hours = Math.floor(whole / 3600)
-	const minutes = Math.floor((whole % 3600) / 60)
-	return `${hours ? `${hours}:${pad(minutes)}` : pad(minutes)}:${pad(whole % 60)}:${pad(f)}`
-}
-const fmtAgo = (ms: number) => {
-	if (!Number.isFinite(ms)) return ''
-	const minutes = Math.round((Date.now() - ms) / 60000)
-	if (minutes < 1) return 'just now'
-	if (minutes < 60) return `${minutes} min ago`
-	const hours = Math.round(minutes / 60)
-	return hours < 24 ? `${hours} h ago` : new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-}
-const whenOf = (take: Take) => {
-	const parsed = take.created ? Date.parse(take.created) : NaN
-	return Number.isFinite(parsed) ? parsed : take.mtime
-}
-const tildify = (dir: string) => dir.replace(/^(\/Users\/[^/]+|\/home\/[^/]+|[A-Za-z]:\\Users\\[^\\]+)/, '~')
-const projectIdFromUrl = () => new URLSearchParams(window.location.search).get('project') ?? ''
-const isTagModel = (id: string) => /^eleven_v[34]/.test(id)
-const isV4 = (id: string) => id.startsWith('eleven_v4')
-const isV3Only = (id: string) => id.startsWith('eleven_v3')
-const shortModel = (name: string) => plain(name).replace(/^Eleven\s+/i, '')
-const labelOf = (value: string) => value.replace(/_/g, ' ')
-const CATEGORY: Record<string, string> = { professional: 'Professional clone', cloned: 'Instant clone', generated: 'Designed voice', premade: 'Default voice' }
-
-const ensureCss = () => {
-	if (document.getElementById(STYLE_ID)) return
-	const style = document.createElement('style')
-	style.id = STYLE_ID
-	style.textContent =
-		'@keyframes kino-vo-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}' +
-		'.kino-vo-btn:hover{background:rgba(var(--kp-ink),0.09)!important;color:var(--kp-strong)!important}' +
-		'.kino-vo-chip:hover{background:rgba(var(--kp-ink),0.1)!important;color:var(--kp-strong)!important}' +
-		'.kino-vo-take:hover{background:rgba(var(--kp-ink),0.025)}' +
-		'.kino-vo-ta::placeholder{color:rgba(var(--kp-ink),0.3)}' +
-		'.kino-vo-ta::selection{background:rgba(147,197,253,0.32);color:transparent}' +
-		'.kino-vo-range{accent-color:var(--kp-text);height:14px;margin:0;cursor:pointer}' +
-		'.kino-vo-scroll::-webkit-scrollbar{width:8px}.kino-vo-scroll::-webkit-scrollbar-thumb{background:rgba(var(--kp-ink),0.1);border-radius:4px}'
-	document.head.appendChild(style)
-}
-
-// ---------- syntax ----------
-type Seg = { text: string; kind?: string }
-const SEG_STYLE: Record<string, object> = {
-	tag: { color: 'var(--kp-violet)', background: 'rgba(167,139,250,0.16)', borderRadius: 3 },
-	break: { color: AMBER, background: 'rgba(252,211,77,0.12)', borderRadius: 3 },
-	ipa: { color: 'var(--kp-cyan)', background: 'rgba(103,232,249,0.12)', borderRadius: 3 },
-	pause: { color: 'var(--kp-green)' },
-	caps: { color: 'var(--kp-strong)', textDecoration: 'underline', textDecorationColor: 'rgba(var(--kp-ink),0.45)', textUnderlineOffset: 3 },
-	bad: { color: RED, background: 'rgba(252,165,165,0.12)', borderRadius: 3, textDecoration: 'underline wavy rgba(252,165,165,0.7)' },
-}
-const segmentsOf = (text: string, modelId: string): Seg[] => {
-	const tags = isTagModel(modelId)
-	const rules: { re: string; kind: string }[] = [
-		{ re: '\\[[^\\]\\n]{1,80}\\]', kind: tags ? 'tag' : 'bad' },
-		{ re: '<break\\b[^>\\n]*>', kind: tags ? 'bad' : 'break' },
-		{ re: '<phoneme\\b[^>\\n]*>[^<\\n]*<\\/phoneme>', kind: PHONEME_MODELS.includes(modelId) ? 'ipa' : 'bad' },
-		...(isV4(modelId) ? [{ re: '(?<=^|[\\s("])\\/[^\\/\\s][^\\/\\n]{0,60}\\/', kind: 'ipa' }] : []),
-		{ re: '\\.\\.\\.|…', kind: 'pause' },
-		...(tags ? [{ re: '\\b[A-Z][A-Z]+\\b', kind: 'caps' }] : []),
-	]
-	const re = new RegExp(rules.map(rule => `(${rule.re})`).join('|'), 'gm')
-	const out: Seg[] = []
-	let last = 0
-	for (let match = re.exec(text); match; match = re.exec(text)) {
-		if (!match[0]) {
-			re.lastIndex++
-			continue
-		}
-		if (match.index > last) out.push({ text: text.slice(last, match.index) })
-		const group = match.slice(1).findIndex(value => value !== undefined)
-		out.push({ text: match[0], kind: rules[group]?.kind })
-		last = match.index + match[0].length
-	}
-	if (last < text.length) out.push({ text: text.slice(last) })
-	return out
-}
-
-const lintOf = (text: string, model: Model | undefined, modelId: string) => {
-	const out: string[] = []
-	const tags = isTagModel(modelId)
-	if (tags) {
-		if (/<break\b/i.test(text)) out.push('v3 and v4 ignore <break>. Use [short pause], [long pause] or ... instead.')
-		if (/<phoneme\b/i.test(text))
-			out.push(isV4(modelId) ? 'v4 does not read <phoneme>. Put IPA between slashes instead, like /ˈkiːnoʊ/.' : 'v3 does not read <phoneme>. Spell the word the way it sounds, or switch to v4 and use /IPA/.')
-	} else {
-		if (/\[[^\]\n]{1,80}\]/.test(text)) out.push('[Audio tags] only work on v3 and v4. This model reads them out loud.')
-		if (/<phoneme\b/i.test(text) && !PHONEME_MODELS.includes(modelId)) out.push('<phoneme> only works on Flash v2, Turbo v2 and English v1. This model skips it.')
-		if ([...text.matchAll(/<break\s+time="([\d.]+)\s*s?"/gi)].some(match => Number(match[1]) > 3)) out.push('Breaks max out at 3 seconds.')
-		if ((text.match(/<break\b/gi) ?? []).length > 6) out.push('Many breaks in one take can make delivery unstable. Split it if it drifts.')
-	}
-	const open = (text.match(/\[/g) ?? []).length
-	const close = (text.match(/\]/g) ?? []).length
-	if (open !== close) out.push('An audio tag is missing a bracket.')
-	if (model?.maxChars && text.trim().length > model.maxChars)
-		out.push(`${shortModel(model.name)} takes up to ${fmtInt(model.maxChars)} characters per take. Split the text or pick Flash v2.5.`)
-	return out
-}
-
-type Chip = { label: string; title?: string; run: { kind: 'tag' | 'raw' | 'wrap' | 'caps'; a?: string; b?: string; select?: boolean } }
-const tag = (name: string, title?: string): Chip => ({ label: name, title, run: { kind: 'tag', a: name } })
-const chipGroups = (modelId: string): { id: string; label: string; chips: Chip[] }[] => {
-	if (isTagModel(modelId))
-		return [
-			{
-				id: 'delivery',
-				label: 'Delivery',
-				chips: ['whispers', 'excited', 'sarcastic', 'curious', 'professional', 'sympathetic', 'reassuring', 'mischievously', 'questioning', 'dismissive', 'crying'].map(name =>
-					tag(name, 'Steers how the words after it are spoken'),
-				),
-			},
-			{
-				id: 'reactions',
-				label: 'Reactions',
-				chips: ['laughs', 'laughs harder', 'starts laughing', 'wheezing', 'sighs', 'exhales', 'snorts', 'happy gasp', 'frustrated sigh'].map(name => tag(name)),
-			},
-			{
-				id: 'pacing',
-				label: 'Pacing',
-				chips: [
-					tag('short pause'),
-					tag('long pause'),
-					tag('pauses'),
-					{ label: '...', title: 'Ellipsis: a beat of hesitation', run: { kind: 'raw', a: '...' } },
-					{ label: 'CAPS', title: 'Select a word first. Capitals add emphasis.', run: { kind: 'caps' } },
-				],
-			},
-			{
-				id: 'sounds',
-				label: 'Sounds',
-				chips: ['applause', 'clapping', 'gunshot', 'explosion', 'swallows', 'gulps'].map(name => tag(name, 'Sound effect, works best with expressive stability')),
-			},
-			{
-				id: 'accent',
-				label: 'Accent',
-				chips: ['British', 'American', 'Australian', 'Irish', 'Scottish', 'French', 'German', 'Polish'].map(name =>
-					tag(`strong ${name} accent`, 'Switches the accent for what follows'),
-				),
-			},
-			{ id: 'more', label: 'Experimental', chips: [tag('sings', 'Experimental'), tag('woo', 'Experimental')] },
-			...(isV4(modelId)
-				? [
-						{
-							id: 'pronounce',
-							label: 'Pronounce',
-							chips: [
-								{
-									label: '/IPA/',
-									title: 'v4 reads IPA between slashes. Select the word, click, then type its IPA, e.g. /ˈkiːnoʊ/.',
-									run: { kind: 'wrap' as const, a: '/', b: '/', select: true },
-								},
-							],
-						},
-					]
-				: []),
-		]
-	return [
-		{
-			id: 'pauses',
-			label: 'Pauses',
-			chips: ['0.3', '0.5', '1', '1.5', '2', '3'].map(seconds => ({
-				label: `${seconds}s`,
-				title: `<break time="${seconds}s" />`,
-				run: { kind: 'raw' as const, a: `<break time="${seconds}s" />` },
-			})),
-		},
-		...(PHONEME_MODELS.includes(modelId)
-			? [
-					{
-						id: 'pronounce',
-						label: 'Pronounce',
-						chips: [
-							{
-								label: 'IPA phoneme',
-								title: 'Wraps the selected word. Type the IPA into ph="".',
-								run: { kind: 'wrap' as const, a: '<phoneme alphabet="ipa" ph="">', b: '</phoneme>' },
-							},
-							{
-								label: 'CMU phoneme',
-								title: 'Wraps the selected word. Type CMU Arpabet into ph="", e.g. K IY1 N OW0.',
-								run: { kind: 'wrap' as const, a: '<phoneme alphabet="cmu-arpabet" ph="">', b: '</phoneme>' },
-							},
-						],
-					},
-				]
-			: []),
-	]
-}
-
-const HELP_TAGS = [
-	['[whispers] [excited] [sarcastic]', 'Audio tags in square brackets steer the words after them. Free-form tags like [nervously] often work too.'],
-	['[laughs] [sighs] [applause]', 'Reactions and sound effects, placed where they should happen.'],
-	['[short pause] [long pause] ...', 'Pauses. <break> tags are ignored on v3 and v4.'],
-	['CAPS', 'Emphasis on a word. Punctuation (! ? ...) shapes rhythm.'],
-	['[strong French accent]', 'Accent switch for what follows.'],
-	['/ˈkiːnoʊ/', 'v4 only: IPA between slashes for exact pronunciation.'],
-	['Stability', 'v3: Creative is most expressive but can drift, Natural stays closest to the voice, Robust is steady but follows tags less.'],
-]
-const HELP_SSML = [
-	['<break time="1.5s" />', 'Pause of up to 3 seconds. Too many in one take can make it unstable.'],
-	['<phoneme alphabet="ipa" ph="ˈkiːnoʊ">Kino</phoneme>', 'Exact pronunciation on Flash v2, Turbo v2 and English v1. alphabet="cmu-arpabet" also works.'],
-	['[tags]', 'Not supported: these models read square brackets out loud. Switch to v3 or v4 for tags.'],
-	['Style', 'Multilingual v2: exaggerates the speaker style. Leave at 0 for the most stable read.'],
-]
-const HELP_ALL = [
-	['Dictionaries', 'Pronunciation dictionaries apply to every model (Advanced, up to 3).'],
-	['Previous / next text', 'Context for continuity when a line is part of a longer read.'],
-	['Text normalization', 'Spells out numbers, dates and units. Auto lets the model decide.'],
-]
-
-// ---------- small UI pieces ----------
-const button = {
-	height: 22,
-	padding: '0 8px',
-	border: '1px solid rgba(var(--kp-ink),0.1)',
-	borderRadius: 5,
-	background: 'rgba(var(--kp-ink),0.04)',
-	color: 'rgba(var(--kp-ink),0.78)',
-	fontSize: 11,
-	fontFamily: UI_FONT,
-	cursor: 'pointer',
-	lineHeight: '20px',
-	flexShrink: 0,
-	whiteSpace: 'nowrap' as const,
-}
-const primary = { ...button, height: 26, padding: '0 14px', background: TEXT, color: BG, border: 'none', fontWeight: 600, fontSize: 12, lineHeight: '26px' }
-const input = {
-	height: 26,
-	padding: '0 8px',
-	borderRadius: 5,
-	border: '1px solid rgba(var(--kp-ink),0.14)',
-	background: 'var(--kp-well)',
-	color: TEXT,
-	fontFamily: UI_FONT,
-	fontSize: 12,
-	outline: 'none',
-	minWidth: 0,
-	boxSizing: 'border-box' as const,
-}
-const infoLine = { marginTop: 4, color: DIM, fontSize: 11, lineHeight: 1.45 }
-const sectionTitle = (text: string, extra?: unknown) =>
-	h(
-		'div',
-		{ style: { display: 'flex', alignItems: 'center', gap: 6, color: DIM, fontSize: 10.5, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' as const } },
-		h('span', null, text),
-		extra ?? null,
-	)
-const clamp = (lines: number) => ({ display: '-webkit-box', WebkitLineClamp: lines, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' })
-
-const Btn = (props: { label: string; title?: string; onClick: () => void; disabled?: boolean; style?: object; primary?: boolean }) =>
-	h(
-		'button',
-		{
-			className: props.primary ? undefined : 'kino-vo-btn',
-			title: props.title,
-			disabled: props.disabled,
-			onClick: (event: { stopPropagation: () => void }) => {
-				event.stopPropagation()
-				props.onClick()
-			},
-			style: { ...(props.primary ? primary : button), ...(props.disabled ? { opacity: 0.4, cursor: 'default' } : {}), ...props.style },
-		},
-		props.label,
-	)
-
-const IconBtn = (label: string, title: string, onClick: () => void, disabled?: boolean) =>
-	h(
-		'button',
-		{
-			className: 'kino-vo-btn',
-			title,
-			disabled,
-			onClick: (event: { stopPropagation: () => void }) => {
-				event.stopPropagation()
-				onClick()
-			},
-			style: {
-				width: 22,
-				height: 22,
-				padding: 0,
-				border: 'none',
-				borderRadius: 5,
-				background: 'transparent',
-				color: DIM,
-				cursor: disabled ? 'default' : 'pointer',
-				fontSize: 13,
-				lineHeight: '22px',
-				flexShrink: 0,
-				opacity: disabled ? 0.35 : 1,
-			},
-		},
-		label,
-	)
-
-const Segmented = (props: { value: string; options: { value: string; label: string; title?: string }[]; onChange: (value: string) => void }) =>
-	h(
-		'div',
-		{ style: { display: 'flex', padding: 2, gap: 2, borderRadius: 6, background: 'rgba(var(--kp-ink),0.05)', flexShrink: 0, flexWrap: 'wrap' as const } },
-		...props.options.map(option =>
-			h(
-				'button',
-				{
-					key: option.value,
-					title: option.title,
-					onClick: () => props.onChange(option.value),
-					style: {
-						height: 20,
-						padding: '0 8px',
-						border: 'none',
-						borderRadius: 4,
-						fontSize: 11,
-						fontFamily: UI_FONT,
-						cursor: 'pointer',
-						background: props.value === option.value ? 'rgba(var(--kp-ink),0.14)' : 'transparent',
-						color: props.value === option.value ? 'var(--kp-strong)' : DIM,
-						fontWeight: props.value === option.value ? 600 : 400,
-					},
-				},
-				option.label,
-			),
-		),
-	)
-
-const Select = (props: { value: string; onChange: (value: string) => void; options: unknown[]; title?: string; disabled?: boolean; style?: object }) =>
-	h(
-		'select',
-		{
-			value: props.value,
-			title: props.title,
-			disabled: props.disabled,
-			onChange: (event: { target: { value: string } }) => props.onChange(event.target.value),
-			style: { ...input, flex: 1, paddingRight: 4, cursor: 'pointer', ...props.style },
-		},
-		...props.options,
-	)
-
-const Row = (label: string, control: unknown, title?: string) =>
-	h(
-		'div',
-		{ style: { display: 'flex', alignItems: 'center', gap: 8, minHeight: 26 } },
-		h('span', { title, style: { width: 96, flexShrink: 0, color: DIM, fontSize: 11, cursor: title ? 'help' : 'default' } }, label),
-		h('div', { style: { flex: 1, minWidth: 0, display: 'flex', gap: 6, alignItems: 'center' } }, control),
-	)
-
-const Slider = (props: {
-	label: string
-	title?: string
-	value: number | null
-	fallback?: number | null
-	min: number
-	max: number
-	step: number
-	format?: (n: number) => string
-	onChange: (value: number | null) => void
-	resetLabel?: string
-}) => {
-	const shown = props.value ?? props.fallback ?? (props.min + props.max) / 2
-	const format = props.format ?? ((n: number) => n.toFixed(2))
-	return h(
-		'div',
-		{ style: { display: 'flex', alignItems: 'center', gap: 8, height: 26 } },
-		h('span', { title: props.title, style: { width: 96, flexShrink: 0, color: DIM, fontSize: 11, cursor: props.title ? 'help' : 'default' } }, props.label),
-		h('input', {
-			type: 'range',
-			className: 'kino-vo-range',
-			min: props.min,
-			max: props.max,
-			step: props.step,
-			value: shown,
-			onChange: (event: { target: { value: string } }) => props.onChange(Number(event.target.value)),
-			style: { flex: 1, minWidth: 60, opacity: props.value === null ? 0.45 : 1 },
-		}),
-		h(
-			'span',
-			{ title: props.value === null ? props.resetLabel ?? 'Voice default' : undefined, style: { width: 42, textAlign: 'right' as const, fontFamily: MONO, fontSize: 11, color: props.value === null ? FAINT : TEXT } },
-			format(shown),
-		),
-		h(
-			'span',
-			{ style: { width: 22, flexShrink: 0, visibility: props.value === null ? ('hidden' as const) : ('visible' as const) } },
-			IconBtn('↺', props.resetLabel ? `Back to ${props.resetLabel.toLowerCase()}` : 'Back to the voice default', () => props.onChange(null)),
-		),
-	)
-}
-
-// ---------- error boundary + playhead probe ----------
-class Boundary extends Component<{ fallback?: unknown; children?: unknown }, { failed: boolean }> {
-	state = { failed: false }
-	static getDerivedStateFromError() {
-		return { failed: true }
-	}
-	componentDidCatch() {}
-	render() {
-		return (this.state.failed ? this.props.fallback ?? null : this.props.children) as any
-	}
-}
-
-type PlayheadSink = { current: { frame: number | null; fps: number | null } }
-function PlayheadProbe(props: { sink: PlayheadSink }) {
-	const { player, playerRef } = useRemotionPlayer() as { player: unknown; playerRef: unknown }
-	const frame = useTimelinePosition({ playerRef } as any) as number
-	const { fps } = useFps() as { fps: number }
-	const attached = Boolean(player) && Number.isFinite(frame)
-	props.sink.current = { frame: attached ? Math.max(0, Math.round(frame)) : null, fps: fps || null }
-	return h(
-		'span',
-		{
-			title: 'Playhead. "At playhead" drops takes here.',
-			style: { padding: '0 6px', height: 18, lineHeight: '18px', borderRadius: 4, background: 'rgba(var(--kp-ink),0.06)', color: DIM, fontFamily: MONO, fontSize: 10.5 },
-		},
-		attached ? fmtTc(frame, fps) : '--:--',
-	)
-}
-
-// ---------- waveform ----------
-function Wave(props: { audioKey: string; path: string; active: boolean; audio: HTMLAudioElement; onSeek: (fraction: number, duration: number) => void }) {
-	const canvasRef = useRef<HTMLCanvasElement | null>(null)
-	const durationRef = useRef(0)
-	const [peaks, setPeaks] = useState<number[] | null>(null)
-	const theme = useKinoTheme()
-
-	useEffect(() => {
-		let live = true
-		loadAudio(props.audioKey, props.path)
-			.then(data => {
-				if (!live) return
-				durationRef.current = data.duration
-				setPeaks(data.peaks)
-			})
-			.catch(() => live && setPeaks([]))
-		return () => {
-			live = false
-		}
-	}, [props.audioKey, props.path])
-
-	useEffect(() => {
-		const canvas = canvasRef.current
-		if (!canvas) return
-		const audio = props.audio
-		let raf = 0
-		const paint = () => {
-			const dpr = window.devicePixelRatio || 1
-			const width = canvas.clientWidth
-			const height = canvas.clientHeight
-			if (!width || !height) return
-			if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
-				canvas.width = Math.round(width * dpr)
-				canvas.height = Math.round(height * dpr)
-			}
-			const ctx = canvas.getContext('2d')
-			if (!ctx) return
-			ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-			ctx.clearRect(0, 0, width, height)
-			// Canvas cannot read CSS variables, so resolve the theme's ink once per paint
-			const ink = cssVar(canvas, 'ink') || '255,255,255'
-			const played = cssVar(canvas, 'strong') || '#fafafa'
-			const total = audio.duration || durationRef.current
-			const progress = props.active && total ? audio.currentTime / total : 0
-			const bars = Math.max(8, Math.floor(width / 3))
-			for (let i = 0; i < bars; i++) {
-				const value = peaks && peaks.length ? peaks[Math.min(peaks.length - 1, Math.floor((i / bars) * peaks.length))] : 0.14
-				const bar = Math.max(2, value * (height - 2))
-				ctx.fillStyle =
-					(i + 0.5) / bars <= progress ? played : peaks === null || !peaks.length ? `rgba(${ink},0.09)` : props.active ? `rgba(${ink},0.36)` : `rgba(${ink},0.24)`
-				ctx.fillRect(i * 3, (height - bar) / 2, 2, bar)
-			}
-		}
-		const loop = () => {
-			paint()
-			if (props.active && !audio.paused) raf = requestAnimationFrame(loop)
-		}
-		const restart = () => {
-			cancelAnimationFrame(raf)
-			loop()
-		}
-		restart()
-		const observer = new ResizeObserver(paint)
-		observer.observe(canvas)
-		const events = ['play', 'pause', 'seeked', 'ended', 'loadedmetadata']
-		if (props.active) events.forEach(name => audio.addEventListener(name, restart))
-		return () => {
-			cancelAnimationFrame(raf)
-			observer.disconnect()
-			events.forEach(name => audio.removeEventListener(name, restart))
-		}
-	}, [peaks, props.active, props.audio, theme])
-
-	return h('canvas', {
-		ref: canvasRef,
-		title: 'Click to play from here',
-		onClick: (event: { clientX: number }) => {
-			const canvas = canvasRef.current
-			if (!canvas) return
-			const rect = canvas.getBoundingClientRect()
-			props.onSeek(Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)), durationRef.current)
-		},
-		style: { flex: '1 1 120px', minWidth: 90, height: 26, cursor: 'pointer', display: 'block' },
-	})
-}
+import { createElement as h, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import '../theme'
+import { IS_MAC, IS_WIN, MACHINE, SHOW_IN, MOD_ENTER, TERMINAL_APP } from '../platform'
+import { api, BridgeCard, BridgeError, bridgeMessage, projectId, useBridge } from '../bridge'
+import {
+	PREFS_KEY, DRAFT_KEY, HIDDEN_KEY, DEFAULT_MODEL, MODEL_ORDER, PHONEME_MODELS, FORMATS, BATCH_PAGE, UI_FONT, MONO, BG, TEXT, DIM, FAINT, LINE, RED,
+	AMBER, EMPTY_VS, DEFAULT_ADV, loadAudio, audioPath, readJson, writeJson, drop, plain, fmtInt, fmtSec, fmtTc, fmtAgo, whenOf, tildify, isTagModel, isV4,
+	isV3Only, shortModel, labelOf, CATEGORY, SEG_STYLE, segmentsOf, lintOf, chipGroups, HELP_TAGS, HELP_SSML, HELP_ALL, type Status, type Voice,
+	type Model, type Req, type Take, type Quota, type Dict, type Fx, type Effects, type VS, type Adv, type Prefs, type Pending, type Chip,
+} from './lib'
+import {
+	input, infoLine, sectionTitle, clamp, Btn, IconBtn, Segmented, Select, Row, Slider, Boundary, PlayheadProbe, Wave, EDITOR_TEXT, ensureCss, keepFocus,
+	CodeLine,
+} from './ui'
 
 // ---------- panel ----------
 export default function VoiceoverPanel() {
@@ -768,10 +29,16 @@ export default function VoiceoverPanel() {
 	const playheadRef = useRef<{ frame: number | null; fps: number | null }>({ frame: null, fps: null })
 
 	const [width, setWidth] = useState(0)
-	const [bridge, setBridge] = useState<BridgeState>('checking')
-	const [bridgeNote, setBridgeNote] = useState('')
-	const [status, setStatus] = useState<{ outputDir?: string; sdk?: string; voiceDir?: string; defaults?: { voiceId?: string | null } } | null>(null)
-	// Default voice: config.json voice_id or ELEVENLABS_VOICE_ID on this machine (see the bridge's voice worker).
+	const [status, setStatus] = useState<Status | null>(null)
+	const { bridge, ready: connected, note: bridgeNote, check, pair, fail: bridgeFail } = useBridge({
+		needs: ['tts'],
+		probe: async () => setStatus(await api('/tts/status')),
+	})
+	// ElevenLabs turned the key down on a real request. The status route only knows that a key exists.
+	const [keyRejected, setKeyRejected] = useState(false)
+	// Everything below runs only with the bridge connected and a key the worker could load.
+	const ready = connected && Boolean(status?.hasKey) && !keyRejected
+	// Optional default voice: voice_id in the voice config file, or ELEVENLABS_VOICE_ID beside the key.
 	const defaultVoice = status?.defaults?.voiceId || ''
 	const [voices, setVoices] = useState<Voice[] | null>(null)
 	const [models, setModels] = useState<Model[] | null>(null)
@@ -782,19 +49,24 @@ export default function VoiceoverPanel() {
 	const [storedVs, setStoredVs] = useState<Record<string, Req>>({})
 	const storedLoads = useRef<Record<string, Promise<Req | null>>>({})
 	const storedFresh = useRef(false)
+	// First run on this computer: start from the defaults in the voice config file, if it has any.
+	const firstRun = useRef<boolean | null>(null)
+	if (firstRun.current === null) firstRun.current = readJson(PREFS_KEY, null) === null
 	const [prefs, setPrefs] = useState<Prefs>(() => {
 		const saved = readJson(PREFS_KEY, {})
 		return {
 			voiceId: '',
 			modelId: DEFAULT_MODEL,
-			takes: 2,
+			takes: 1,
 			vsByVoice: {},
 			chips: 'delivery',
 			...saved,
 			adv: { ...DEFAULT_ADV, ...(saved.adv ?? {}), name: '' },
 		}
 	})
-	const [text, setText] = useState<string>(() => readJson(DRAFT_KEY, ''))
+	// One draft per project, so two projects open at once do not overwrite each other's script.
+	const draftKey = useMemo(() => `${DRAFT_KEY}:${projectId() || 'none'}`, [])
+	const [text, setText] = useState<string>(() => readJson(draftKey, null) ?? readJson(DRAFT_KEY, ''))
 	const [showAdvanced, setShowAdvanced] = useState(false)
 	const [showHelp, setShowHelp] = useState(false)
 	const [history, setHistory] = useState<Take[]>([])
@@ -802,6 +74,12 @@ export default function VoiceoverPanel() {
 	const [hidden, setHidden] = useState<string[]>(() => readJson(HIDDEN_KEY, []))
 	const [batchLimit, setBatchLimit] = useState(BATCH_PAGE)
 	const [pending, setPending] = useState<Pending | null>(null)
+	// Runs the bridge is doing for someone else: this panel before it was closed and reopened, or a second panel.
+	const [remote, setRemote] = useState<Pending[]>([])
+	const [voicesError, setVoicesError] = useState('')
+	const [dirDraft, setDirDraft] = useState<string | null>(null)
+	// Take lengths measured while decoding, for takes saved without one (ffprobe not installed).
+	const [measured, setMeasured] = useState<Record<string, number>>({})
 	const [confirm, setConfirm] = useState<{ estimate: number; remaining: number | null; body: Req } | null>(null)
 	const [now, setNow] = useState<{ key: string; playing: boolean } | null>(null)
 	const [busy, setBusy] = useState<Record<string, string>>({})
@@ -828,9 +106,9 @@ export default function VoiceoverPanel() {
 	// ---------- persistence ----------
 	useEffect(() => writeJson(PREFS_KEY, { ...prefs, adv: { ...prefs.adv, name: '' } }), [prefs])
 	useEffect(() => {
-		const timer = setTimeout(() => writeJson(DRAFT_KEY, text), 400)
+		const timer = setTimeout(() => writeJson(draftKey, text), 400)
 		return () => clearTimeout(timer)
-	}, [text])
+	}, [text, draftKey])
 	useEffect(() => writeJson(HIDDEN_KEY, hidden.slice(-500)), [hidden])
 
 	// ---------- audio ----------
@@ -854,70 +132,28 @@ export default function VoiceoverPanel() {
 	}, [])
 
 	// ---------- bridge ----------
-	const check = useCallback(async () => {
-		try {
-			const health = await fetch(`${BRIDGE}/health`).then(response => response.json())
-			if (!Array.isArray(health.features) || !health.features.includes('tts')) {
-				setBridge('outdated')
-				return
-			}
-		} catch {
-			setBridge('offline')
-			return
-		}
-		if (!localStorage.getItem(TOKEN_KEY)) {
-			setBridge('unpaired')
-			return
-		}
-		try {
-			const next = await api('/tts/status')
-			setStatus(next)
-			setBridge(next.hasKey ? 'ok' : 'nokey')
-			setBridgeNote('')
-		} catch (error) {
-			if (error instanceof BridgeError && error.status === 401) setBridge('unpaired')
-			else if (error instanceof BridgeError && error.status === 0) setBridge('offline')
-			else {
-				setBridge('nokey')
-				setBridgeNote(error instanceof Error ? error.message : String(error))
-			}
-		}
-	}, [])
-
-	useEffect(() => {
+	// Connection errors move the bridge state. 424 is the bridge saying ElevenLabs refused the key.
+	const fail = useCallback(
+		(error: unknown) => {
+			if (error instanceof BridgeError && error.status === 424) setKeyRejected(true)
+			return bridgeFail(error)
+		},
+		[bridgeFail],
+	)
+	const recheck = () => {
+		setKeyRejected(false)
 		check()
-	}, [check])
-
-	useEffect(() => {
-		if (bridge !== 'offline' && bridge !== 'outdated') return
-		const timer = setInterval(check, 4000)
-		return () => clearInterval(timer)
-	}, [bridge, check])
-
-	const pair = () => {
-		setBridge('pairing')
-		setBridgeNote('')
-		fetch(`${BRIDGE}/pair`, { method: 'POST' })
-			.then(async response => {
-				const body = await response.json().catch(() => ({}))
-				if (response.ok && typeof body.token === 'string') {
-					localStorage.setItem(TOKEN_KEY, body.token)
-					check()
-				} else {
-					setBridge('unpaired')
-					setBridgeNote(typeof body.error === 'string' ? body.error : `Pairing failed (${response.status}).`)
-				}
-			})
-			.catch(() => setBridge('offline'))
 	}
-
-	const fail = useCallback((error: unknown) => {
-		if (error instanceof BridgeError && (error.status === 0 || error.status === 401)) {
-			setBridge(error.status === 401 ? 'unpaired' : 'offline')
-			return ''
-		}
-		return error instanceof Error ? error.message : String(error)
-	}, [])
+	useEffect(() => {
+		if (!status || !firstRun.current) return
+		firstRun.current = false
+		const wanted = status.defaults ?? {}
+		setPrefs(current => ({
+			...current,
+			modelId: wanted.modelId || current.modelId,
+			adv: { ...current.adv, format: FORMATS.some(item => item.value === wanted.outputFormat) ? String(wanted.outputFormat) : current.adv.format },
+		}))
+	}, [status])
 
 	// ---------- data ----------
 	const loadHistory = useCallback(() => {
@@ -925,6 +161,15 @@ export default function VoiceoverPanel() {
 			.then(body => {
 				setHistory(body.items ?? [])
 				setHistoryDir(body.dir ?? '')
+				setRemote(
+					(Array.isArray(body.pending) ? body.pending : []).map((item: Req) => ({
+						text: String(item.text ?? ''),
+						takes: Number(item.takes) || 1,
+						startedAt: Number(item.startedAt) || Date.now(),
+						voiceName: String(item.voiceName ?? 'Voice'),
+						modelId: String(item.modelId ?? ''),
+					})),
+				)
 			})
 			.catch(fail)
 	}, [fail])
@@ -955,17 +200,14 @@ export default function VoiceoverPanel() {
 		(fresh = false) => {
 			const q = fresh ? '?fresh=1' : ''
 			api(`/tts/voices${q}`)
-				.then(body => setVoices(body.voices ?? []))
-				.catch(error => {
-					const message = fail(error)
-					if (message) say(`Voices: ${message}`, 'error')
+				.then(body => {
+					setVoices(body.voices ?? [])
+					setVoicesError('')
 				})
+				.catch(error => setVoicesError(fail(error)))
 			api(`/tts/models${q}`)
 				.then(body => setModels(body.models ?? []))
-				.catch(error => {
-					const message = fail(error)
-					if (message) say(`Models: ${message}`, 'error')
-				})
+				.catch(error => say(`Models: ${fail(error)}`, 'error'))
 			if (fresh) {
 				setDicts(null)
 				setEffects(null)
@@ -979,21 +221,22 @@ export default function VoiceoverPanel() {
 		[fail, loadHistory, loadQuota, say],
 	)
 	useEffect(() => {
-		if (bridge === 'ok') loadAll()
-	}, [bridge, loadAll])
-	// No voice picked yet: start on the configured default, else the first of your own voices, else the first voice.
+		if (ready) loadAll()
+	}, [ready, loadAll])
+	// No usable voice picked: start on the configured default, else the first of the account's own voices, else the first voice.
 	useEffect(() => {
-		if (prefs.voiceId || !voices?.length) return
+		if (!voices?.length || voices.some(item => item.id === prefs.voiceId)) return
 		const pick = voices.find(item => item.id === defaultVoice) ?? voices.find(item => item.category !== 'premade') ?? voices[0]
-		setPrefs(current => (current.voiceId ? current : { ...current, voiceId: pick.id }))
-	}, [voices, defaultVoice, prefs.voiceId])
+		if (prefs.voiceId) say(`The voice picked before is not on this account, so ${pick.name} is selected.`)
+		setPrefs(current => ({ ...current, voiceId: pick.id }))
+	}, [voices, defaultVoice, prefs.voiceId, say])
 	useEffect(() => {
-		if (bridge !== 'ok' || !prefs.voiceId || storedVs[prefs.voiceId]) return
+		if (!ready || !prefs.voiceId || storedVs[prefs.voiceId]) return
 		loadStored(prefs.voiceId, storedFresh.current)
 		storedFresh.current = false
-	}, [bridge, prefs.voiceId, storedVs, loadStored])
+	}, [ready, prefs.voiceId, storedVs, loadStored])
 	useEffect(() => {
-		if (bridge !== 'ok' || !showAdvanced) return
+		if (!ready || !showAdvanced) return
 		if (!dicts)
 			api('/tts/dictionaries')
 				.then(body => setDicts(body.dictionaries ?? []))
@@ -1002,13 +245,20 @@ export default function VoiceoverPanel() {
 			api('/tts/effects')
 				.then(body => setEffects({ filters: body.filters ?? [], environments: body.environments ?? [], noises: body.noises ?? [] }))
 				.catch(() => setEffects({ filters: [], environments: [], noises: [] }))
-	}, [bridge, showAdvanced, dicts, effects])
+	}, [ready, showAdvanced, dicts, effects])
 
+	const waiting = Boolean(pending) || remote.length > 0
 	useEffect(() => {
-		if (!pending) return
+		if (!waiting) return
 		const timer = setInterval(() => setTick(n => n + 1), 1000)
 		return () => clearInterval(timer)
-	}, [pending])
+	}, [waiting])
+	// A run this panel did not start itself has no request to wait on: look for its takes until it is done.
+	useEffect(() => {
+		if (!ready || pending || !remote.length) return
+		const timer = setInterval(loadHistory, 3000)
+		return () => clearInterval(timer)
+	}, [ready, pending, remote.length, loadHistory])
 
 	// ---------- derived ----------
 	const patch = (next: Partial<Prefs>) => setPrefs(current => ({ ...current, ...next }))
@@ -1140,6 +390,8 @@ export default function VoiceoverPanel() {
 	}
 
 	// ---------- generate ----------
+	const estimateOf = (body: Req) =>
+		Math.ceil(String(body.text ?? '').trim().length * (sortedModels.find(item => item.id === body.model_id)?.costFactor ?? 1) * (Number(body.takes) || 1))
 	const generate = (body: Req, confirmed = false) => {
 		if (pending) return
 		if (!String(body.text ?? '').trim()) return
@@ -1147,29 +399,51 @@ export default function VoiceoverPanel() {
 		const startedVoice = voices?.find(item => item.id === body.voice_id)?.name ?? 'Voice'
 		setPending({ text: String(body.text), takes: Number(body.takes) || 1, startedAt: Date.now(), voiceName: startedVoice, modelId: String(body.model_id ?? '') })
 		if (width < 760) setTimeout(() => versionsRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 50)
-		api('/tts/generate', { method: 'POST', body: { ...body, confirmed } })
-			.then((result: { takes: Take[] }) => {
-				const ok = result.takes.filter(take => !take.error)
-				const bad = result.takes.filter(take => take.error)
+		// voice_name goes into the take's sidecar, so the list can name the voice later.
+		api('/tts/generate', { method: 'POST', body: { ...body, voice_name: startedVoice, confirmed } })
+			.then((result: { takes?: Take[]; needsConfirm?: boolean; estimate?: number; remaining?: number | null }) => {
+				// The bridge asks before a large run instead of starting it.
+				if (result.needsConfirm) {
+					setConfirm({ estimate: Number(result.estimate) || estimateOf(body), remaining: result.remaining ?? null, body })
+					return
+				}
+				const takes = result.takes ?? []
+				const ok = takes.filter(take => !take.error)
+				const bad = takes.filter(take => take.error)
 				setHistory(current => [...ok, ...current.filter(item => !ok.some(fresh => fresh.file === item.file))])
 				setBatchLimit(limit => Math.max(limit, BATCH_PAGE))
-				if (bad.length) say(`${bad.length} of ${result.takes.length} takes failed: ${bad[0].error}`, 'error')
+				if (bad.length) say(`${bad.length} of ${takes.length} takes failed: ${bad[0].error}`, 'error')
 				if (body.name) setAdv({ name: '' })
 				if (ok[0]) play(ok[0].file, audioPath(ok[0].file), 0)
 				loadQuota()
 			})
 			.catch(error => {
-				if (error instanceof BridgeError && error.status === 409 && error.body?.needsConfirm) {
-					setConfirm({ estimate: Number(error.body.estimate) || 0, remaining: error.body.remaining ?? null, body })
+				// A bridge from before this panel version asks the same question with a 409.
+				if (error instanceof BridgeError && error.status === 409) {
+					setConfirm({ estimate: estimateOf(body), remaining, body })
 					return
 				}
 				const message = fail(error)
-				if (message) say(message, 'error')
+				say(error instanceof BridgeError && error.status === 0 ? 'The bridge stopped while generating. Takes that finished are in the folder: press ↻ once it is back.' : message, 'error')
 				loadQuota()
 			})
 			.finally(() => setPending(null))
 	}
-	const canGenerate = bridge === 'ok' && chars > 0 && !pending && Boolean(prefs.voiceId) && !overLimit
+	// Why Generate is off, in words, when the reason is not just an empty editor.
+	const blocker = !voices
+		? voicesError
+			? 'Voices did not load'
+			: 'Loading voices…'
+		: !voices.length
+			? 'No voices on this account'
+			: !voice
+				? 'Pick a voice'
+				: !models
+					? 'Loading models…'
+					: !model
+						? 'Pick a model'
+						: ''
+	const canGenerate = ready && chars > 0 && !pending && !blocker && !overLimit
 	const generateNow = async () => {
 		if (!canGenerate) return
 		const touched = Object.values(vs).some(value => value !== null)
@@ -1248,9 +522,10 @@ export default function VoiceoverPanel() {
 			body: {
 				file: take.file,
 				place: place ? 'playhead' : undefined,
-				projectId: place ? projectIdFromUrl() || undefined : undefined,
+				projectId: place ? projectId() || undefined : undefined,
 				frame: place && probe.frame !== null ? probe.frame : undefined,
 				fps: place && probe.fps ? probe.fps : undefined,
+				duration: take.duration ?? measured[take.file] ?? undefined,
 			},
 		})
 			.then(result => {
@@ -1274,11 +549,19 @@ export default function VoiceoverPanel() {
 				}),
 			)
 	}
-	const reveal = (file?: string) =>
-		api('/tts/reveal', { method: 'POST', body: file ? { file } : {} }).catch(error => {
-			const message = fail(error)
-			if (message) say(message, 'error')
-		})
+	const reveal = (file?: string, target?: 'keys') =>
+		api('/tts/reveal', { method: 'POST', body: file ? { file } : target ? { target } : {} }).catch(error => say(fail(error), 'error'))
+	const noteDuration = useCallback((file: string, seconds: number) => setMeasured(current => (current[file] === seconds ? current : { ...current, [file]: seconds })), [])
+	// The takes folder lives in the bridge's voice config, one per computer.
+	const saveDir = (value: string) =>
+		api('/tts/config', { method: 'POST', body: { outputDir: value } })
+			.then(next => {
+				setStatus(current => ({ ...(current ?? {}), outputDir: next.outputDir, defaultDir: next.defaultDir }))
+				setDirDraft(null)
+				loadHistory()
+				say(value ? 'New takes go to the new folder. Earlier takes stay where they are.' : 'Back to the default folder.')
+			})
+			.catch(error => say(fail(error), 'error'))
 
 	// ---------- editor ----------
 	const insert = (chip: Chip) => {
@@ -1341,7 +624,7 @@ export default function VoiceoverPanel() {
 	const previewKey = voice ? `voice:${voice.id}` : ''
 	const previewPlaying = Boolean(now?.key === previewKey && now?.playing)
 	const voiceLabels = voice?.labels ? Object.values(voice.labels).filter(Boolean).map(value => labelOf(String(value))) : []
-	// Only models you can pick here; the account also lists internal ones (v4 exp, v4 eval, ...).
+	// Only models the picker offers: an account can list more than the ones that do text to speech.
 	const fineTunedNames = sortedModels.filter(item => voice?.fineTuned?.includes(item.id)).map(item => shortModel(item.name))
 
 	const voiceBlock = h(
@@ -1358,20 +641,31 @@ export default function VoiceoverPanel() {
 				onChange: id => patch({ voiceId: id }),
 				options: voices
 					? [
-							...(voice ? [] : [h('option', { key: 'missing', value: prefs.voiceId }, 'Voice not found on this account')]),
+							...(voice ? [] : [h('option', { key: 'missing', value: prefs.voiceId }, voices.length ? 'Pick a voice' : 'No voices yet')]),
 							mine.length ? h('optgroup', { key: 'mine', label: 'My voices' }, ...mine.map(voiceOption)) : null,
 							library.length ? h('optgroup', { key: 'lib', label: 'Default voices' }, ...library.map(voiceOption)) : null,
 						]
-					: [h('option', { key: 'loading', value: prefs.voiceId }, 'Loading voices…')],
-			}),
-			Btn({
-				label: previewPlaying ? '❚❚' : '▶',
+					: [h('option', { key: 'loading', value: prefs.voiceId }, voicesError ? 'Voices did not load' : 'Loading voices…')],
+					}),
+					Btn({
+						label: previewPlaying ? '❚❚' : '▶',
 				title: 'Play the ElevenLabs sample for this voice',
 				disabled: !voice?.previewUrl,
 				onClick: () => voice && toggle(previewKey, `/tts/voice-preview?voice=${encodeURIComponent(voice.id)}`),
 				style: { height: 26, width: 30, padding: 0, fontSize: 10 },
 			}),
 		),
+		voicesError && !voices
+			? h(
+					'div',
+					{ style: { ...infoLine, color: RED, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' as const } },
+					h('span', { style: { flex: '1 1 160px', wordBreak: 'break-word' as const } }, plain(voicesError)),
+					Btn({ label: 'Try again', onClick: () => loadAll(true) }),
+				)
+			: null,
+		voices && !voices.length
+			? h('div', { style: { ...infoLine, color: AMBER } }, 'This ElevenLabs account has no voices yet. Add or clone one on elevenlabs.io, then press ↻ at the top.')
+			: null,
 		voice
 			? h(
 					'div',
@@ -1876,9 +1170,11 @@ export default function VoiceoverPanel() {
 		advancedBlock,
 	)
 
-	const costLine = chars
-		? `${fmtInt(chars)} characters  ·  about ${fmtInt(estimate)} credits${prefs.takes > 1 ? ` for ${prefs.takes} takes` : ''}`
-		: 'Nothing to say yet'
+	const costLine = blocker
+		? blocker
+		: chars
+			? `${fmtInt(chars)} characters  ·  about ${fmtInt(estimate)} credits${prefs.takes > 1 ? ` for ${prefs.takes} takes` : ''}`
+			: 'Nothing to say yet'
 	const generateBar = h(
 		'div',
 		{ style: { borderTop: `1px solid ${LINE}`, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6, background: BG, flexShrink: 0 } },
@@ -1920,7 +1216,7 @@ export default function VoiceoverPanel() {
 			h(
 				'span',
 				{
-					title: remaining !== null ? `${fmtInt(remaining)} credits left this cycle` : undefined,
+					title: remaining !== null ? `${fmtInt(remaining)} credits left until the plan resets` : undefined,
 					style: { flex: 1, minWidth: 0, color: overLimit ? AMBER : DIM, fontSize: 11, textAlign: 'right' as const, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' },
 				},
 				costLine,
@@ -1955,6 +1251,7 @@ export default function VoiceoverPanel() {
 			'button',
 			{
 				title,
+				onMouseDown: keepFocus,
 				onClick: (event: { stopPropagation: () => void }) => {
 					event.stopPropagation()
 					onClick()
@@ -1990,14 +1287,22 @@ export default function VoiceoverPanel() {
 			{ key, className: 'kino-vo-take', style: { display: 'flex', alignItems: 'center', gap: 8, padding: '4px 4px', margin: '0 -4px', borderRadius: 6, flexWrap: 'wrap' as const } },
 			playButton(active, playing, () => toggle(key, path), playing ? 'Pause' : 'Play'),
 			h('span', { title: take.seed !== null ? `Seed ${take.seed}` : undefined, style: { width: 20, color: active ? 'var(--kp-strong)' : DIM, fontSize: 11, fontWeight: 600 } }, `V${take.take}`),
-			h(Wave, { key: `wave-${key}`, audioKey: key, path, active, audio: audioEl(), onSeek: (fraction: number, duration: number) => seek(key, path, fraction, duration) }),
-			h('span', { style: { width: 38, textAlign: 'right' as const, color: DIM, fontFamily: MONO, fontSize: 11, flexShrink: 0 } }, fmtSec(take.duration)),
+			h(Wave, {
+				key: `wave-${key}`,
+				audioKey: key,
+				path,
+				active,
+				audio: audioEl(),
+				onSeek: (fraction: number, duration: number) => seek(key, path, fraction, duration),
+				onDuration: take.duration == null ? (seconds: number) => noteDuration(key, seconds) : undefined,
+			}),
+			h('span', { style: { width: 38, textAlign: 'right' as const, color: DIM, fontFamily: MONO, fontSize: 11, flexShrink: 0 } }, fmtSec(take.duration ?? measured[key])),
 			h(
 				'div',
 				{ style: { display: 'flex', gap: 4, alignItems: 'center', marginLeft: 'auto' } },
 				Btn({
 					label: state === 'timeline' ? 'Placing…' : 'At playhead',
-					title: 'Import into Kino and put it on the timeline at the playhead (2 Kino MCP calls, 1 if already in the library)',
+					title: 'Import into Kino and put it on the timeline at the playhead. Uses 2 Kino MCP calls, 1 if the take is already in the library.',
 					disabled: Boolean(state),
 					onClick: () => importTake(take, true),
 					style: { background: 'rgba(var(--kp-ink),0.1)', color: 'var(--kp-strong)' },
@@ -2026,7 +1331,7 @@ export default function VoiceoverPanel() {
 		const req = first.request
 		const said = typeof req?.text === 'string' ? req.text : first.name
 		const meta = [
-			first.voiceName,
+			first.voiceName || voices?.find(item => item.id === first.voiceId)?.name,
 			modelName(first.modelId),
 			fmtAgo(whenOf(first)),
 			first.characters ? `${fmtInt(first.characters)} chars` : '',
@@ -2055,7 +1360,7 @@ export default function VoiceoverPanel() {
 					Btn({
 						label: 'Again',
 						title: `New takes of the same text and settings, about ${fmtInt(Math.ceil((req?.text?.trim().length ?? 0) * (sortedModels.find(m => m.id === first.modelId)?.costFactor ?? 1) * (first.takes || 1)))} credits`,
-						disabled: !reusable || Boolean(pending) || bridge !== 'ok',
+						disabled: !reusable || Boolean(pending) || !ready,
 						onClick: () => again(first),
 					}),
 					IconBtn('×', 'Hide from this list. Files stay in the folder.', () => hide(batch.id)),
@@ -2065,38 +1370,67 @@ export default function VoiceoverPanel() {
 		)
 	}
 
-	const pendingCard = pending
-		? h(
+	const pendingCard = (run: Pending, key: string) =>
+		h(
+			'div',
+			{ key, style: { ...card, borderColor: 'rgba(var(--kp-ink),0.14)' } },
+			h('div', { style: { ...clamp(3), color: TEXT, fontSize: 12, lineHeight: 1.45, whiteSpace: 'pre-wrap' as const, marginBottom: 2 } }, run.text),
+			h(
 				'div',
-				{ key: 'pending', style: { ...card, borderColor: 'rgba(var(--kp-ink),0.14)' } },
-				h('div', { style: { ...clamp(3), color: TEXT, fontSize: 12, lineHeight: 1.45, whiteSpace: 'pre-wrap' as const, marginBottom: 2 } }, pending.text),
+				{ style: { color: DIM, fontSize: 11, marginBottom: 6 } },
+				`${plain(run.voiceName)}  ·  ${modelName(run.modelId)}  ·  generating ${run.takes} take${run.takes > 1 ? 's' : ''}  ·  ${Math.max(0, Math.round((Date.now() - run.startedAt) / 1000))}s`,
+			),
+			...Array.from({ length: run.takes }, (_, index) =>
 				h(
 					'div',
-					{ style: { color: DIM, fontSize: 11, marginBottom: 6 } },
-					`${plain(pending.voiceName)}  ·  ${modelName(pending.modelId)}  ·  generating ${pending.takes} take${pending.takes > 1 ? 's' : ''}  ·  ${Math.round((Date.now() - pending.startedAt) / 1000)}s`,
+					{ key: index, style: { display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' } },
+					h('span', { style: { width: 26, height: 26, borderRadius: 13, background: 'rgba(var(--kp-ink),0.06)', flexShrink: 0 } }),
+					h('span', { style: { width: 20, color: FAINT, fontSize: 11, fontWeight: 600 } }, `V${index + 1}`),
+					h('div', {
+						style: {
+							flex: 1,
+							height: 20,
+							borderRadius: 4,
+							background: 'linear-gradient(90deg, rgba(var(--kp-ink),0.03) 0%, rgba(var(--kp-ink),0.11) 50%, rgba(var(--kp-ink),0.03) 100%)',
+							backgroundSize: '200% 100%',
+							animation: `kino-vo-shimmer 1.6s linear ${index * 0.15}s infinite`,
+						},
+					}),
 				),
-				...Array.from({ length: pending.takes }, (_, index) =>
-					h(
-						'div',
-						{ key: index, style: { display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' } },
-						h('span', { style: { width: 26, height: 26, borderRadius: 13, background: 'rgba(var(--kp-ink),0.06)', flexShrink: 0 } }),
-						h('span', { style: { width: 20, color: FAINT, fontSize: 11, fontWeight: 600 } }, `V${index + 1}`),
-						h('div', {
-							style: {
-								flex: 1,
-								height: 20,
-								borderRadius: 4,
-								background: 'linear-gradient(90deg, rgba(var(--kp-ink),0.03) 0%, rgba(var(--kp-ink),0.11) 50%, rgba(var(--kp-ink),0.03) 100%)',
-								backgroundSize: '200% 100%',
-								animation: `kino-vo-shimmer 1.6s linear ${index * 0.15}s infinite`,
-							},
-						}),
-					),
-				),
-			)
-		: null
+			),
+		)
+	// This panel's own run, or the runs the bridge reports when this panel did not start them.
+	const pendingCards = pending ? [pendingCard(pending, 'pending')] : remote.map((run, index) => pendingCard(run, `remote-${index}`))
 
 	const outDir = historyDir || status?.outputDir || (IS_WIN ? 'Documents\\ElevenLabs Voiceover' : '~/Documents/ElevenLabs Voiceover')
+	// The folder can be changed on a bridge that has the config route (it reports configFile).
+	const canMove = Boolean(status?.configFile)
+	const dirEditor =
+		dirDraft !== null
+			? h(
+					'div',
+					{ style: { ...card, display: 'flex', flexDirection: 'column', gap: 6, color: DIM, fontSize: 11, lineHeight: 1.45 } },
+					'New takes are saved to this folder on this computer. Takes already made stay where they are and leave this list.',
+					h(
+						'div',
+						{ style: { display: 'flex', gap: 6, flexWrap: 'wrap' as const } },
+						h('input', {
+							value: dirDraft,
+							autoFocus: true,
+							placeholder: status?.defaultDir ?? 'Full path of a folder',
+							onChange: (event: { target: { value: string } }) => setDirDraft(event.target.value),
+							onKeyDown: (event: { key: string }) => {
+								if (event.key === 'Enter' && dirDraft.trim()) saveDir(dirDraft.trim())
+								if (event.key === 'Escape') setDirDraft(null)
+							},
+							style: { ...input, flex: '1 1 200px', fontFamily: MONO, fontSize: 11 },
+						}),
+						Btn({ primary: true, label: 'Save', disabled: !dirDraft.trim(), onClick: () => saveDir(dirDraft.trim()) }),
+						status?.defaultDir && outDir !== status.defaultDir ? Btn({ label: 'Use default', title: status.defaultDir, onClick: () => saveDir(''), style: { height: 26 } }) : null,
+						Btn({ label: 'Cancel', onClick: () => setDirDraft(null), style: { height: 26 } }),
+					),
+				)
+			: null
 	const versions = h(
 		'div',
 		{ ref: versionsRef, style: { display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 12px 16px' } },
@@ -2106,20 +1440,22 @@ export default function VoiceoverPanel() {
 			sectionTitle('Versions', visible.length ? h('span', { style: { color: FAINT, fontWeight: 400 } }, String(visible.length)) : null),
 			h('span', { style: { flex: 1 } }),
 			Btn({ label: 'Folder', title: `Open ${tildify(outDir)}`, onClick: () => reveal() }),
+			canMove && dirDraft === null ? Btn({ label: 'Change', title: 'Save takes to another folder', onClick: () => setDirDraft(outDir) }) : null,
 		),
-		pendingCard,
+		dirEditor,
+		...pendingCards,
 		...visible.slice(0, batchLimit).map(batchCard),
 		visible.length > batchLimit
 			? h('div', null, Btn({ label: `Show older (${visible.length - batchLimit})`, onClick: () => setBatchLimit(limit => limit + BATCH_PAGE) }))
 			: null,
-		!visible.length && !pending
+		!visible.length && !pendingCards.length
 			? h(
 					'div',
 					{ style: { padding: '14px 2px', color: DIM, fontSize: 12, lineHeight: 1.6 } },
 					h('div', { style: { color: TEXT, fontWeight: 600, marginBottom: 4 } }, 'No takes yet'),
 					`Write something, pick how many takes, press Generate (${MOD_ENTER}). Each take is saved to `,
-					h('span', { style: { fontFamily: MONO, color: TEXT } }, tildify(outDir)),
-					' with a JSON sidecar of the exact settings, so you can come back to it later.',
+					h('span', { style: { fontFamily: MONO, color: TEXT, wordBreak: 'break-all' as const } }, tildify(outDir)),
+					' with a JSON file of the exact settings beside it, so you can come back to it later.',
 				)
 			: null,
 		hiddenCount
@@ -2133,122 +1469,93 @@ export default function VoiceoverPanel() {
 	)
 
 	// ---------- render: chrome ----------
-	const dot = { ok: 'var(--kp-green-2)', checking: 'var(--kp-muted)', pairing: 'var(--kp-yellow)', unpaired: 'var(--kp-yellow)', outdated: 'var(--kp-yellow)', nokey: 'var(--kp-yellow)', offline: 'var(--kp-red-2)' }[bridge]
-	const resetDate = quota?.resetUnix ? new Date(quota.resetUnix * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''
+	const dot = !connected
+		? { ok: 'var(--kp-green-2)', checking: 'var(--kp-muted)', pairing: 'var(--kp-yellow)', unpaired: 'var(--kp-yellow)', outdated: 'var(--kp-yellow)', offline: 'var(--kp-red-2)' }[bridge]
+		: ready
+			? 'var(--kp-green-2)'
+			: 'var(--kp-yellow)'
+	const dotTitle = !connected
+		? (bridgeMessage(bridge)?.title ?? 'Looking for the Kino bridge')
+		: !ready
+			? 'Bridge connected. ElevenLabs is not set up yet.'
+			: `Bridge connected${status?.sdk ? `, ElevenLabs SDK ${status.sdk}` : ''}.${status?.ffprobe === false ? ` ffprobe was not found, so take lengths are measured here. For exact lengths: ${status.ffprobeInstall ?? 'install ffmpeg'}` : ''}`
+	const resetDate = quota?.resetUnix ? new Date(quota.resetUnix * 1000).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : ''
 	const header = h(
 		'div',
 		{
 			style: { display: 'flex', alignItems: 'center', gap: 8, height: 34, padding: '0 8px 0 12px', borderBottom: `1px solid ${LINE}`, flexShrink: 0, userSelect: 'none' as const },
 		},
-		h('span', {
-			title: bridge === 'ok' ? `Bridge connected${status?.sdk ? `, ElevenLabs SDK ${status.sdk}` : ''}` : bridge,
-			style: { width: 7, height: 7, borderRadius: '50%', background: dot, flexShrink: 0 },
-		}),
+		h('span', { title: dotTitle, style: { width: 7, height: 7, borderRadius: '50%', background: dot, flexShrink: 0 } }),
 		h('span', { style: { color: TEXT, fontSize: 12, fontWeight: 600 } }, 'Voiceover'),
-		bridge === 'ok' ? h(Boundary, { fallback: null }, h(PlayheadProbe, { sink: playheadRef })) : null,
+		ready ? h(Boundary, { fallback: null }, h(PlayheadProbe, { sink: playheadRef })) : null,
 		h('span', { style: { flex: 1 } }),
-		quota
+		ready && quota
 			? h(
 					'span',
 					{
 						title: `${quota.tier ? `${quota.tier[0].toUpperCase()}${quota.tier.slice(1)} plan: ` : ''}${fmtInt(quota.used)} of ${fmtInt(quota.limit)} credits used${resetDate ? `, resets ${resetDate}` : ''}`,
-						style: { color: DIM, fontSize: 11, whiteSpace: 'nowrap' as const },
+						style: { color: remaining === 0 ? AMBER : DIM, fontSize: 11, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 },
 					},
 					`${fmtInt(remaining ?? 0)} credits left`,
 				)
 			: null,
-		IconBtn('↻', 'Reload voices, models, credits and versions', () => loadAll(true), bridge !== 'ok'),
+		IconBtn('↻', 'Reload voices, models, credits and versions', () => loadAll(true), !ready),
 	)
 
-	const code = (value: string) =>
-		h(
-			'code',
-			{
-				style: {
-					display: 'block',
-					padding: '6px 8px',
-					borderRadius: 5,
-					background: 'rgba(var(--kp-ink),0.06)',
-					fontFamily: MONO,
-					fontSize: 11,
-					color: TEXT,
-					userSelect: 'text' as const,
-					wordBreak: 'break-all' as const,
-				},
-			},
-			value,
-		)
-
-	const overlayCard = (title: string, body: unknown, action?: { label: string; onClick: () => void }) =>
+	// ---------- render: not ready ----------
+	// One card in place of the editor: the shared bridge card, or the ElevenLabs setup steps.
+	const voiceDir = status?.voiceDir || (IS_WIN ? '%LOCALAPPDATA%\\elevenlabs-voice' : '~/.local/share/elevenlabs-voice')
+	const setupCard = (title: string, ...children: unknown[]) =>
 		h(
 			'div',
-			{ style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(var(--kp-bg-rgb),0.96)', zIndex: 5 } },
-			h(
-				'div',
-				{ style: { maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 10, color: 'rgba(var(--kp-ink),0.7)', fontSize: 12, lineHeight: 1.5 } },
-				h('div', { style: { color: 'var(--kp-strong)', fontSize: 14, fontWeight: 600 } }, title),
-				body,
-				bridgeNote ? h('div', { style: { color: RED } }, plain(bridgeNote)) : null,
-				action ? h('div', null, Btn({ primary: true, label: action.label, onClick: action.onClick })) : null,
-			),
+			{ style: { display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 440, padding: 14, borderRadius: 8, border: `1px solid ${LINE}`, background: 'rgba(var(--kp-ink),0.03)', color: 'rgba(var(--kp-ink),0.7)', fontSize: 12, lineHeight: 1.5 } },
+			h('div', { style: { color: 'var(--kp-strong)', fontSize: 14, fontWeight: 600 } }, title),
+			...children,
 		)
-
-	const startCmd = START_BRIDGE
-	const overlay =
-		bridge === 'checking'
-			? overlayCard('Connecting…', h('div', null, `Looking for the Kino bridge on ${MACHINE}.`))
-			: bridge === 'unpaired'
-				? overlayCard(
-						'Connect to the Kino bridge',
-						h(
-							'div',
-							null,
-							`Voiceover runs through the same local bridge as the Terminal and YT Downloader panels. Click Connect, then choose ${ALLOW} in ${PAIR_DIALOG}. If one of those panels is already connected, this one is too.`,
-						),
-						{ label: 'Connect', onClick: pair },
-					)
-				: bridge === 'pairing'
-					? overlayCard(`Approve on ${YOUR_MACHINE}`, h('div', null, `Choose ${ALLOW} in ${PAIR_DIALOG}. It may be behind the Kino window.`))
-					: bridge === 'outdated'
-						? overlayCard(
-								'Restart the bridge',
-								h(
-									'div',
-									{ style: { display: 'flex', flexDirection: 'column', gap: 8 } },
-									h('div', null, `The bridge running now predates voiceover support. Stop it (Ctrl+C in the window running it) and start it again. ${START_BRIDGE_HINT}`),
-									code(startCmd),
-									h('div', null, 'This panel reconnects by itself.'),
-								),
-								{ label: 'Check again', onClick: check },
-							)
-						: bridge === 'offline'
-							? overlayCard(
-									'Kino bridge is not running',
-									h(
-										'div',
-										{ style: { display: 'flex', flexDirection: 'column', gap: 8 } },
-										h('div', null, `${START_BRIDGE_HINT} This panel reconnects by itself.`),
-										code(startCmd),
-									),
-									{ label: 'Check again', onClick: check },
-								)
-							: bridge === 'nokey'
-								? overlayCard(
-										'ElevenLabs is not set up',
-										h(
-											'div',
-											{ style: { display: 'flex', flexDirection: 'column', gap: 8 } },
-											h(
-												'div',
-												null,
-												`The speech worker could not find an ElevenLabs API key. It lives in .env.local in the voice folder on ${MACHINE}, and only the worker reads it. Connect your account in a terminal, then restart the bridge:`,
-											),
-											code(status?.voiceDir ? `cd "${status.voiceDir}"` : IS_MAC ? 'cd ~/.local/share/elevenlabs-voice' : 'cd "$env:LOCALAPPDATA\\elevenlabs-voice"'),
-											code('npx -y @elevenlabs/cli@latest onboard connect --env-path .env.local'),
-										),
-										{ label: 'Check again', onClick: check },
-									)
-								: null
+	const copied = () => say('Copied.')
+	const away = !connected
+		? bridge === 'checking'
+			? h('div', { style: { color: DIM, fontSize: 12, padding: 6 } }, 'Looking for the Kino bridge…')
+			: h(BridgeCard, { bridge, note: bridgeNote, uses: 'Voiceover', onPair: pair, onRetry: check })
+		: !status
+			? setupCard(
+					'The speech worker did not answer',
+					h('div', { style: { color: RED, wordBreak: 'break-word' as const } }, plain(bridgeNote) || 'No answer from the bridge’s ElevenLabs worker.'),
+					h('div', null, 'Press Check again. If it keeps failing, run npm run doctor in the panels folder.'),
+					h('div', null, Btn({ primary: true, label: 'Check again', onClick: recheck })),
+				)
+			: setupCard(
+					keyRejected ? 'ElevenLabs did not accept the key' : 'Connect your ElevenLabs account',
+					h(
+						'div',
+						null,
+						keyRejected
+							? `The key saved on ${MACHINE} was turned down: it may have been revoked or replaced. Connect the account again in ${TERMINAL_APP}:`
+							: `Voiceover speaks with your own ElevenLabs account. The key stays in a file on ${MACHINE} that only the speech worker reads: it never reaches this panel. Run these two lines in ${TERMINAL_APP} and approve in the browser page that opens:`,
+					),
+					CodeLine(`cd "${voiceDir}"`, copied),
+					CodeLine('npx -y @elevenlabs/cli@latest onboard connect --env-path .env.local', copied),
+					h(
+						'div',
+						null,
+						'Or put the key in by hand: a file named ',
+						h('span', { style: { fontFamily: MONO, color: TEXT } }, '.env.local'),
+						' in that folder with the line ',
+						h('span', { style: { fontFamily: MONO, color: TEXT } }, 'ELEVENLABS_API_KEY=your key'),
+						'.',
+					),
+					h(
+						'div',
+						{ style: { display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' as const } },
+						Btn({ primary: true, label: 'Check again', title: 'Looks for the key again. No bridge restart needed.', onClick: recheck }),
+						canMove ? Btn({ label: 'Open the folder', onClick: () => reveal(undefined, 'keys'), style: { height: 26 } }) : null,
+					),
+				)
+	const awayView = h(
+		'div',
+		{ className: 'kino-vo-scroll', style: { flex: 1, minHeight: 0, overflowY: 'auto' as const, padding: 14, display: 'flex', flexDirection: 'column', alignItems: 'center' } },
+		away,
+	)
 
 	const toast = flash
 		? h(
@@ -2259,7 +1566,7 @@ export default function VoiceoverPanel() {
 						position: 'absolute',
 						left: 12,
 						right: 12,
-						bottom: 58,
+						bottom: ready ? 58 : 12,
 						padding: '8px 10px',
 						borderRadius: 6,
 						background: flash.tone === 'error' ? 'var(--kp-error-bg)' : 'var(--kp-toast)',
@@ -2269,6 +1576,7 @@ export default function VoiceoverPanel() {
 						lineHeight: 1.4,
 						boxShadow: '0 6px 20px var(--kp-shadow)',
 						cursor: 'pointer',
+						wordBreak: 'break-word' as const,
 						zIndex: 4,
 					},
 				},
@@ -2277,24 +1585,26 @@ export default function VoiceoverPanel() {
 		: null
 
 	const wide = width >= 760
-	const body = wide
-		? h(
-				'div',
-				{ style: { display: 'flex', flex: 1, minHeight: 0 } },
-				h(
+	const body = !ready
+		? awayView
+		: wide
+			? h(
 					'div',
-					{ style: { width: '52%', minWidth: 380, maxWidth: 720, display: 'flex', flexDirection: 'column', borderRight: `1px solid ${LINE}` } },
-					h('div', { className: 'kino-vo-scroll', style: { flex: 1, minHeight: 0, overflowY: 'auto' as const } }, compose),
+					{ style: { display: 'flex', flex: 1, minHeight: 0 } },
+					h(
+						'div',
+						{ style: { width: '52%', minWidth: 380, maxWidth: 720, display: 'flex', flexDirection: 'column', borderRight: `1px solid ${LINE}` } },
+						h('div', { className: 'kino-vo-scroll', style: { flex: 1, minHeight: 0, overflowY: 'auto' as const } }, compose),
+						generateBar,
+					),
+					h('div', { className: 'kino-vo-scroll', style: { flex: 1, minWidth: 0, overflowY: 'auto' as const } }, versions),
+				)
+			: h(
+					'div',
+					{ style: { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } },
+					h('div', { className: 'kino-vo-scroll', style: { flex: 1, minHeight: 0, overflowY: 'auto' as const } }, compose, h('div', { style: { borderTop: `1px solid ${LINE}` } }), versions),
 					generateBar,
-				),
-				h('div', { className: 'kino-vo-scroll', style: { flex: 1, minWidth: 0, overflowY: 'auto' as const } }, versions),
-			)
-		: h(
-				'div',
-				{ style: { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } },
-				h('div', { className: 'kino-vo-scroll', style: { flex: 1, minHeight: 0, overflowY: 'auto' as const } }, compose, h('div', { style: { borderTop: `1px solid ${LINE}` } }), versions),
-				generateBar,
-			)
+				)
 
 	return h(
 		'div',
@@ -2322,22 +1632,6 @@ export default function VoiceoverPanel() {
 		},
 		header,
 		body,
-		overlay,
 		toast,
 	)
-}
-
-const EDITOR_TEXT = {
-	margin: 0,
-	padding: '10px 12px',
-	boxSizing: 'border-box' as const,
-	fontFamily: UI_FONT,
-	fontSize: 13.5,
-	lineHeight: '21px',
-	letterSpacing: 'normal',
-	whiteSpace: 'pre-wrap' as const,
-	overflowWrap: 'break-word' as const,
-	wordBreak: 'normal' as const,
-	tabSize: 4,
-	textAlign: 'left' as const,
 }

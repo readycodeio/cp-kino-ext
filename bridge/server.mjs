@@ -20,7 +20,8 @@ import { handleYtdl, setLogger, closeYtdl } from "./ytdl.mjs";
 import { handleTts, setLogger as setTtsLogger, closeTts } from "./tts.mjs";
 import { handleThumbs, setLogger as setThumbsLogger, closeThumbs } from "./thumbs.mjs";
 import { handleZernio, setLogger as setZernioLogger, closeZernio } from "./zernio.mjs";
-import { IS_WIN, THIS_MACHINE, HOME, DATA_DIR, PROJECTS_DIR, askToPair, pickShell, shellArgs, STOP_SIGNALS, ensurePtyHelper } from "./platform.mjs";
+import { startAutoInstall } from "./autoinstall.mjs";
+import { IS_WIN, THIS_MACHINE, HOME, DATA_DIR, PROJECTS_DIR, MOUNTS_DIR, askToPair, pickShell, shellArgs, STOP_SIGNALS, ensurePtyHelper } from "./platform.mjs";
 
 const PORT = Number(process.env.KINO_TERMINAL_PORT ?? 47680);
 const HOST = "127.0.0.1";
@@ -29,13 +30,14 @@ const ALLOWED_ORIGINS = new Set(
 );
 const ALLOWED_HOSTS = new Set([`127.0.0.1:${PORT}`, `localhost:${PORT}`]);
 const USER = os.userInfo();
-const VERSION = 8;
-const FEATURES = ["pty", "ytdl", "tts", "thumbs", "thumbs-prompt", "zernio", "publish-media"];
+const VERSION = 11;
+const FEATURES = ["auth", "pty", "ytdl", "ytdl-config", "ytdl-formats", "tts", "tts-config", "thumbs", "thumbs-prompt", "zernio", "publish-media", "publish-outbox"];
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const TOKENS_FILE = path.join(DATA_DIR, "tokens.json");
 const DETACHED_TTL_MS = 15 * 60 * 1000; // a closed panel can reattach to its shell for 15 minutes
 const SCROLLBACK_BYTES = 512 * 1024; // output replayed on reattach
 const MAX_SESSIONS = 24;
+const MAX_TOKENS = 40;
 const HELLO_TIMEOUT_MS = 5000;
 const PROJECT_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -57,7 +59,8 @@ const loadTokens = () => {
 };
 const saveToken = () => {
   const token = crypto.randomBytes(32).toString("base64url");
-  const tokens = [...loadTokens(), { sha256: sha256(token).toString("hex"), created: new Date().toISOString() }];
+  // Keep the newest pairings only: every Connect adds one, and old browsers and reinstalls never come back.
+  const tokens = [...loadTokens(), { sha256: sha256(token).toString("hex"), created: new Date().toISOString() }].slice(-MAX_TOKENS);
   fs.writeFileSync(TOKENS_FILE, JSON.stringify({ tokens }, null, 2), { mode: 0o600 });
   if (!IS_WIN) fs.chmodSync(TOKENS_FILE, 0o600); // Windows: the per-user profile folder already limits access
   return token;
@@ -93,7 +96,7 @@ const resolveCwd = ({ cwd, projectId }) => {
     if (path.isAbsolute(expanded) && isDirectory(expanded)) return expanded;
   }
   if (typeof projectId === "string" && PROJECT_ID.test(projectId)) {
-    const projectDir = path.join(PROJECTS_DIR, projectId);
+    const projectDir = path.join(MOUNTS_DIR, projectId);
     if (isDirectory(projectDir)) return projectDir;
   }
   return HOME;
@@ -123,7 +126,7 @@ const createSession = hello => {
   const shell = pickShell(hello.shell, USER);
   const projectDir =
     typeof hello.projectId === "string" && PROJECT_ID.test(hello.projectId)
-      ? path.join(PROJECTS_DIR, hello.projectId)
+      ? path.join(MOUNTS_DIR, hello.projectId)
       : "";
   const env = {
     ...process.env,
@@ -219,6 +222,13 @@ const attach = (session, socket, resumed) => {
 };
 
 // ---------- HTTP ----------
+// Token-gated route groups, one per panel module.
+const ROUTES = [
+  ["/ytdl/", (req, res, url, json) => handleYtdl(req, url, json)],
+  ["/tts/", (req, res, url, json, headers) => handleTts(req, res, url, json, headers)],
+  ["/thumbs/", (req, res, url, json, headers) => handleThumbs(req, res, url, json, headers)],
+  ["/zernio/", (req, res, url, json) => handleZernio(req, res, url, json)],
+];
 const hostAllowed = req => ALLOWED_HOSTS.has(String(req.headers.host ?? "").toLowerCase());
 const originAllowed = req => ALLOWED_ORIGINS.has(String(req.headers.origin ?? ""));
 const corsHeaders = req => ({
@@ -251,6 +261,10 @@ const server = http.createServer((req, res) => {
     log("pair-request");
     askToPair(USER.username).then(approved => {
       pairingInFlight = false;
+      if (approved === "no-dialog") {
+        log("pair-no-dialog");
+        return json(501, { error: "This desktop has no dialog tool to confirm pairing. Install zenity or kdialog, then press Connect again." });
+      }
       if (!approved) {
         pairingCooldownUntil = Date.now() + 10_000;
         log("pair-denied");
@@ -259,22 +273,13 @@ const server = http.createServer((req, res) => {
       log("pair-approved");
       json(200, { token: saveToken() });
     });
-  } else if (url.pathname.startsWith("/ytdl/")) {
+  } else if (url.pathname === "/auth" || ROUTES.some(([prefix]) => url.pathname.startsWith(prefix))) {
+    // Everything past pairing needs the token. /auth is the bare token check panels use to tell
+    // "not paired" from "bridge offline".
     const auth = String(req.headers.authorization ?? "");
     if (!isValidToken(auth.startsWith("Bearer ") ? auth.slice(7) : "")) return json(401, { error: "unauthorized" });
-    handleYtdl(req, url, json);
-  } else if (url.pathname.startsWith("/tts/")) {
-    const auth = String(req.headers.authorization ?? "");
-    if (!isValidToken(auth.startsWith("Bearer ") ? auth.slice(7) : "")) return json(401, { error: "unauthorized" });
-    handleTts(req, res, url, json, headers);
-  } else if (url.pathname.startsWith("/thumbs/")) {
-    const auth = String(req.headers.authorization ?? "");
-    if (!isValidToken(auth.startsWith("Bearer ") ? auth.slice(7) : "")) return json(401, { error: "unauthorized" });
-    handleThumbs(req, res, url, json, headers);
-  } else if (url.pathname.startsWith("/zernio/")) {
-    const auth = String(req.headers.authorization ?? "");
-    if (!isValidToken(auth.startsWith("Bearer ") ? auth.slice(7) : "")) return json(401, { error: "unauthorized" });
-    handleZernio(req, res, url, json);
+    if (url.pathname === "/auth") return json(200, { ok: true, version: VERSION, features: FEATURES });
+    ROUTES.find(([prefix]) => url.pathname.startsWith(prefix))[1](req, res, url, json, headers);
   } else {
     json(404, { error: "not found" });
   }
@@ -339,6 +344,7 @@ const heartbeat = setInterval(() => {
   }
 }, 30_000);
 
+let stopAutoInstall = () => {};
 const shutdown = signal => {
   log("shutdown", { signal, sessions: sessions.size });
   clearInterval(heartbeat);
@@ -347,16 +353,25 @@ const shutdown = signal => {
   closeTts();
   closeThumbs();
   closeZernio();
+  stopAutoInstall();
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 1000).unref();
 };
 for (const signal of STOP_SIGNALS) process.on(signal, () => shutdown(signal));
 
+// A bug in one route must not take every panel's session down with it: log and keep serving.
+process.on("unhandledRejection", reason => log("unhandled-rejection", { error: String(reason?.stack ?? reason).slice(0, 2000) }));
+process.on("uncaughtException", error => {
+  log("uncaught-exception", { error: String(error?.stack ?? error).slice(0, 2000) });
+  if (!server.listening) process.exit(1);
+});
+
 server.on("error", error => {
-  if (error.code === "EADDRINUSE") log("port-in-use", { port: PORT, hint: "Another bridge is already running. Stop it first, or set KINO_TERMINAL_PORT." });
+  if (error.code === "EADDRINUSE") log("port-in-use", { port: PORT, hint: "Another bridge is already running on this port. Stop it first (Ctrl+C in its window, or npm run service -- stop), or set KINO_TERMINAL_PORT." });
   else log("server-error", { error: String(error) });
   process.exit(1);
 });
-server.listen(PORT, HOST, () =>
-  log("listening", { host: HOST, port: PORT, version: VERSION, platform: process.platform, origins: [...ALLOWED_ORIGINS], projectsDir: PROJECTS_DIR, dataDir: DATA_DIR }),
-);
+server.listen(PORT, HOST, () => {
+  log("listening", { host: HOST, port: PORT, version: VERSION, platform: process.platform, origins: [...ALLOWED_ORIGINS], projectsDir: PROJECTS_DIR, mountsDir: MOUNTS_DIR, dataDir: DATA_DIR });
+  stopAutoInstall = startAutoInstall(log);
+});

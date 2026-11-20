@@ -1,14 +1,15 @@
 # Post copy: references
 
-Companion to `SKILL.md` and `rules.json` (same ids). Compiled 2026-11-08, social performance data added 2026-11-09.
+Companion to `SKILL.md` and `rules.json` (same ids). Sources compiled 2026-11-08, file updated 2026-11-19.
 
 ## Method
 
 - Official pages and studies were opened and read on or before 2026-11-08 unless the note says 'seen in results' (only the search snippet was read, so the claim is second hand) or 'snippet' (the page is JS-rendered and was read through search snippets).
-- Kinds: **official** (platform help, policy, API doc, engineering blog or a named platform lead), **study** (academic), **vendor** (a tool company's own data, usually observational and correlational), **creator** (a creator or industry newsletter), **observed** (our read of real posts, no performance claim).
+- Kinds: **official** (platform help, policy, API doc, engineering blog or a named platform lead), **study** (academic), **vendor** (a tool company's own data, usually observational and correlational), **creator** (a creator or industry newsletter), **observed** (a read of real posts, no performance claim).
 - Labels used in `SKILL.md`: **measured** means a number from a study or official doc, with its sample. **Official** means a platform statement without numbers. **Observed** means a pattern in the examples below.
 - Vendor studies measure correlation, not cause. Engagement-rate definitions differ between vendors and platforms, so never compare their percentages across studies.
-- Observed examples came from Kino YouTube research (search ranking on 2026-11-08) for three tutorial queries. Ranking is not performance; no view counts were collected for this skill.
+- Observed examples came from Kino YouTube research (search ranking on 2026-11-08) for three game-server tutorial queries. They are one niche, and ranking is not performance: no view counts were collected. Use them for title shape, and check the pattern against your own niche.
+- Rules with no public source behind them are marked unverified in `SKILL.md` and `rules.json`. Test those against your own analytics.
 
 ## Sources
 
@@ -54,7 +55,7 @@ Companion to `SKILL.md` and `rules.json` (same ids). Compiled 2026-11-08, social
 ### Articles and tools
 
 - **`businesstoday-ig-5-hashtags`**: [Instagram limits hashtag usage to just 5 per reel and post (Business Today)](https://www.businesstoday.in/technology/news/story/no-more-hashtag-stuffing-instagram-limits-hashtag-usage-to-just-5-per-reel-and-post-507444-2025-12-19) (2025-12-19). Reports the @creators post: 'Starting today, Instagram will allow up to 5 hashtags in a reel or post.' Generic tags like #reels may hurt.
-- **`ig-originality-2022`**: [Instagram's ranking system will recommend original content (TechCrunch)](https://techcrunch.com/2022/04/20/instagram-ranking-system-recommend-original-content/) (2022-04-20). Mosseri: original content is favoured over reposts.
+- **`ig-originality-2022`**: [Instagram's ranking system will recommend original content (TechCrunch)](https://techcrunch.com/2022/04/20/instagram-ranking-system-recommend-original-content/) (2022-04-20). Mosseri: original content is favored over reposts.
 - **`petapixel-ig-reposts-2026`**: [New Instagram policies target reposted content (PetaPixel)](https://petapixel.com/2026/04/30/new-instagram-policies-target-reposted-content/) (2026-04-30). Originality rules extended to photos and carousels.
 - **`planoly-tiktok-5-2025`**: [TikTok's 5 hashtag limit (Planoly)](https://planoly.com/blog/tiktok-5-hashtag-limit) (2025-09-04). Reports a cap of 5 hashtags per TikTok post from about Aug 2025. No TikTok statement found.
 - **`sel-tiktok-hashtags`**: [TikTok limits hashtags (Search Engine Land)](https://searchengineland.com/tiktok-limits-hashtags-460894) (2025). Seen in results (403). Corroborates the reported TikTok cap of 5.
@@ -69,14 +70,9 @@ Companion to `SKILL.md` and `rules.json` (same ids). Compiled 2026-11-08, social
 - **`musk-hashtags-2024`**: [Elon Musk says please stop using hashtags (FOX 5 DC)](https://www.fox5dc.com/news/hashtags-x-elon-musk-says-please-stop-using-them) (2024-12-17). Official, reported. Musk: 'Please stop using hashtags.'
 - **`businesstoday-x-ad-hashtags-2025`**: [Musk says hashtags will be banned on X ads (Business Today)](https://www.businesstoday.in/technology/news/story/esthetic-nightmare-elon-musk-says-hashtags-will-be-banned-on-x-ads-starting-tomorrow-481950-2025-06-26) (2025-06-26). Hashtags banned from X ads from 2025-06-27. Signals the platform's stance; organic posts not affected.
 
-### Team sources
-
-- **`readym-social-voice`**: ReadyM social voice and per-platform playbook, global skill at `~/.claude/skills/readym-social-voice/SKILL.md` (built 2026-11-09). Voice, hooks, titles, what wins per platform and the CTA ladder, from the measured data in Social performance below. Wins over this skill on voice; never a source of facts or links.
-- **`obmp-content-kit`**: OB:MP and ReadyM content kit (ReadyM team, facts checked 2026-11-08). Installed as the global skill `obmp-readym-content-kit` (`~/.claude/skills/obmp-readym-content-kit/SKILL.md`). Internal. Source for product facts, versions, links, handles, the section 0 copy rules, the Never claim list and the Internal only list. Newer Msk instructions and live pages win over it.
-
 ### Creator and vendor notes
 
-- **`creatorflow-ig-hashtags`**: [How many hashtags on Instagram (Creatorflow)](https://creatorflow.so/blog/how-many-hashtags-instagram/) (read 2026-10-30). Vendor. Summarises the Dec 2025 cap of 5 and Mosseri saying hashtags do not raise reach.
+- **`creatorflow-ig-hashtags`**: [How many hashtags on Instagram (Creatorflow)](https://creatorflow.so/blog/how-many-hashtags-instagram/) (read 2026-10-30). Vendor. Summarizes the Dec 2025 cap of 5 and Mosseri saying hashtags do not raise reach.
 - **`circleboom-ig-30-2026`**: [How many hashtags should you use on Instagram in 2026 (Circleboom)](https://circleboom.com/blog/how-many-hashtags-should-you-use-on-instagram-in-2026/) (2026-01). Vendor. Dissent: still says 30. Kept to show the cap of 5 is not settled in every source.
 - **`hootsuite-ig-seo`**: [Instagram SEO (Hootsuite)](https://blog.hootsuite.com/instagram-seo) (2025). Vendor. Instagram search reads captions; keywords belong in the caption, not in a hashtag comment.
 - **`kontentino-ig-search`**: [Instagram search and SEO (Kontentino)](https://www.kontentino.com/q-and-a/instagram-search-seo/) (2025). Vendor. Public professional posts can appear in Google results since July 2025.
@@ -88,36 +84,23 @@ Companion to `SKILL.md` and `rules.json` (same ids). Compiled 2026-11-08, social
 
 - **`ex-yt-troublechute-series`**: [Palworld Steam Dedicated Server Setup | Host a FREE Private Server | Full Guide (TroubleChute)](https://www.youtube.com/watch?v=7Erzg2HcBHI). Observed. Game name first, then the exact search phrase. The same template ranks for Enshrouded, ARK, CS2, 7 Days to Die and Farming Simulator 25.
 - **`ex-yt-rockuzza-howto`**: [How to Host a Satisfactory Dedicated Server (Full Setup Guide 2025) (Rockuzza Gaming)](https://www.youtube.com/watch?v=NAWT_KuYi1M). Observed. 'How to' plus game plus a bracketed year or version.
-- **`ex-yt-corukai-skyrim`**: [Set Up Your Own Skyrim Together Server (2026) (Corukai)](https://www.youtube.com/watch?v=O2GLjRbl3uA). Observed. Short, outcome first, 'your own', year tag. Closest neighbour to OB:MP.
-- **`ex-yt-kazzanski-version`**: [Newest Skyrim Together Reborn Install Guide - V 1.8.3 October 2026 (Kazzanski)](https://www.youtube.com/watch?v=sSl-Jzl9VrQ). Observed. Version and month as a freshness signal for a mod that changes often.
 - **`ex-yt-migrate-save`**: [Palworld 1.0 Dedicated Server + Migrate Co-op Save | Complete Guide (TroubleChute)](https://www.youtube.com/watch?v=EZu-Zpl2DUQ). Observed. Version number plus the second job people search for.
 - **`ex-yt-no-port-forward`**: [How to Create Palworld Dedicated Server Without Port Forwarding (No Router Setup) (PingPlayers)](https://www.youtube.com/watch?v=KHBeg6ORlnQ). Observed. Names the step people dread and removes it. Only honest when the video really skips it.
 - **`ex-yt-actually-works`**: [How to Make a Steam Palworld Dedicated Server that Actually Works for Free (Tutorialy)](https://www.youtube.com/watch?v=Sm9XUbAUr4E). Observed. Speaks to people burned by broken guides.
 - **`ex-yt-time-promise`**: [How to Setup a Palworld Dedicated Server in 5 Minutes (Easy Tutorial) (Xielent)](https://www.youtube.com/watch?v=FxUURNZ_hp0). Observed. Time promise. The video runs 5:08, so the claim is checkable.
 - **`ex-yt-hardware-haven`**: [Hosting Your Game Servers is EASY with This (Hardware Haven)](https://www.youtube.com/watch?v=Zda-nIrvyGQ). Observed. Browse-style curiosity title with no game name; suits a channel with an audience, not a search tutorial.
 
-### Social performance (ours and comparables, read 2026-11-09)
-
-Public counts read on 2026-11-09 with yt-dlp (YouTube, TikTok) and public pages. Like rate = likes / views. A like rate under about 0.2% on a high view count usually means a paid boost (unverified until Msk confirms). Never sum these numbers.
-
-- **`ours-yt-2026-11`**: [ReadyM on YouTube](https://www.youtube.com/@readymultiplayer). Measured. Biggest videos look boosted: [OB:MP teaser](https://www.youtube.com/watch?v=y3fPCHn2a68) 362,834 views at 0.10% likes, [PvP Arena](https://www.youtube.com/watch?v=20VnGDwi1Jk) 176,887 at 0.06%. Organic winners: [WukongMP Q&A #1](https://www.youtube.com/watch?v=GXHtaZB3wHo) 20,196 at 10.20%, [Trailer #6 - bosses, bots and next steps!](https://www.youtube.com/watch?v=DrhZsaGAXis) 22,451 at 5.78%. Shorts: [OB:MP Trailer 4](https://www.youtube.com/shorts/b2Klk8AAUgo) 36,476 at 8.89%, [open beta LIVE](https://www.youtube.com/shorts/vUDSBxCB-4g) 44,637 at 8.35%, [parkour and co-op sneaking sync](https://www.youtube.com/shorts/VBoQf6PbvKk) 15,355 at 8.38%. Flops: SDK explainer Shorts 223 and 1,874, POV Short 293.
-- **`ours-tiktok-2026-11`**: [ReadyM on TikTok](https://www.tiktok.com/@ready.mp). Measured. Access posts lead on shares: [100+ elite testers](https://www.tiktok.com/@ready.mp/video/7529530731547217174) 120,700 plays, 2,036 shares; [POV: building co-op](https://www.tiktok.com/@ready.mp/video/7511793539668380950) 192,400 plays, 2,388 shares; [WukongMP SDK open beta](https://www.tiktok.com/@ready.mp/video/7636860664497147158) 425,100 at 8.96% likes. OB:MP posts sit at 0.3 to 2% likes and near 0.01% shares (possibly boosted). The 117 s [deathmatch teaser](https://www.tiktok.com/@ready.mp/video/7694597305369939222) got 323 plays.
-- **`comp-kcdmp-2026`**: [KCD:MP](https://kcd-mp.com) ([YouTube](https://www.youtube.com/@kcd-mp), 1,990 subscribers). Measured. [Gameplay teaser](https://www.youtube.com/watch?v=xAzkIuno1As), 4:00, launch day, chaptered: 161,210 views, 452 comments, embedded by [ixbt](https://ixbt.games/en/news/2026/09/28/kingdom-come-deliverance-ii-polucit-multipleer-modder-pokazal-novyi-geimplei.html) and [PC Games](https://www.pcgames.de/Kingdom-Come-Deliverance-2-Spiel-74644/News/neue-Multiplayer-Mod-1555301/). [Female Characters, Dice and Carts | Kingdom Come Deliverance Multiplayer Mod](https://www.youtube.com/watch?v=Z9vIlvT-630) 45,327. Numbered Shorts 40 to 88, tooling clips 387 and 487. An aggregator X post ([@SynthPotato](https://x.com/SynthPotato/status/2104303814899650695), 12,986 likes) beat the official post (149). Shorts link an expired Discord invite.
-- **`comp-open77-2026`**: Open77 ([TikTok](https://www.tiktok.com/@open2077_network), [YouTube](https://www.youtube.com/@Open2077-cp)). Measured. Top TikToks Sept 9 to 21, 610,800 to 843,100 views, candid 'now works' captions; [hacking real players](https://www.tiktok.com/@open2077_network/video/7685476572060536086) 612,600; [what if real RP servers](https://www.tiktok.com/@open2077_network/video/7683612744825703702) 396,600 and 470 shares. Monthly median fell from 26,600 (Sept) to 627 (Oct) as captions became a date template (median 944). 943 followers on about 4.43M views. Titles with 'Cyberpunk 2077 multiplayer' had higher medians (Shorts 1,245 vs 783; videos 1,657 vs 981). Press embedded YouTube explainers, never TikTok: [PCGamesN](https://www.pcgamesn.com/cyberpunk-2077/open-77-multiplayer-mod), [VGTimes](https://vgtimes.com/gaming-news/172505-cyberpunk-2077-is-getting-multiplayer-rp-servers-with-open-beta-launching-in-november.html).
-- **`comp-speclizer-2026`**: Speclizer's TLOU2 multiplayer mod ([X](https://x.com/Speclizer_), [YouTube](https://www.youtube.com/@Speclizer); series now private, numbers from a [Wayback snapshot](https://web.archive.org/web/20261002225949/https://www.youtube.com/@Speclizer/videos)). Measured. The [first test, 'very broken'](https://x.com/Speclizer_/status/2010075024838013235) got 1,600,326 views on X vs 79,003 for the YouTube episode. [4v4 milestone](https://x.com/Speclizer_/status/2082168785704792309) 298,894, covered by [PC Gamer](https://www.pcgamer.com/games/action/the-last-of-us-multiplayer-mod-has-hit-a-big-milestone-as-it-prepares-for-launch-in-september/). Weakest: 'Leaderboards implemented!' 9,491 and 'Eyeball sync' 26,814.
-- Not measured: Reddit (automated reads blocked), Instagram, LinkedIn, Facebook and our X (login walls). No conversion data per platform.
-
 ## Patterns across the examples (observed)
 
-- Server tutorials that rank put the game name and 'server' in the first 5 words. Curiosity titles without the game name are the exception.
-- Freshness tags (year, version, month) are everywhere because mods and games update often. Use one only when it is true and on screen.
-- Time and 'easy' claims are common and checkable against the runtime. Ours must be too.
-- Emoji appear in a few titles (fire, star). They add nothing to search and break the house voice.
+- The ranked tutorials put the subject's name and the task word in the first 5 words. Curiosity titles without the subject's name are the exception.
+- Freshness tags (year, version, month) are common because the software in these tutorials changes often. Use one only when it is true and on screen.
+- Time and 'easy' claims are common and can be checked against the runtime. Copy written with this skill has to pass the same check.
+- Emoji appear in a few titles (fire, star). They add nothing to search.
 
 ## Not verified
 
 - Instagram's cap of 5 hashtags: announced via @creators and reported widely, but the Help Center could not be read and the Graph API doc still says 30. Some vendors still say 30.
-- TikTok's cap of 5 hashtags (vendor and press only) and vendor claims of a 4,000-character TikTok caption. We use 2,200 per `format.md`.
+- TikTok's cap of 5 hashtags (vendor and press only) and vendor claims of a 4,000-character TikTok caption. The panel uses 2,200, per `format.md`.
 - YouTube title truncation (vendors say about 70 chars desktop search, 50 to 60 mobile). No official number.
 - Feed folds: Instagram about 125 chars, LinkedIn about 140 mobile and 210 desktop. Vendor observations.
 - Facebook Reels title limit of 255 (`ayrshare-char-limits`). Current status of the Facebook link-limit test.

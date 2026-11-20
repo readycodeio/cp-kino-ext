@@ -1,64 +1,37 @@
 {
   "version": 1,
   "name": "post-copy",
-  "updated": "2026-11-09",
-  "summary": "House rules for ReadyM post copy: read the transcript, promise only what is on screen, search words first on search platforms and hook first on browse platforms, 3 options from 3 angle families, few relevant hashtags, links where each platform tolerates them, founder voice with no dashes and no marketing filler. Voice, hooks and what wins per platform come from the global readym-social-voice skill (measured top posts on our channels and on KCD:MP, Open77 and Speclizer, 2026-11-09): lead with the impossible social moment, name the full game plus 'multiplayer', candid dev voice, access posts drive shares, one working CTA.",
+  "updated": "2026-11-19",
+  "summary": "Brand-neutral rules for social post copy written from a video: read the transcript, promise only what is on screen, search words first on search platforms and hook first on browse platforms, 3 options from 3 angle families, few relevant hashtags, links where each platform tolerates them, plain specific sentences with no marketing filler. Brand voice, product facts, names and links come from /publish/knowledge/README.md, which wins over this file on voice. The honesty rules and hard platform limits here always win.",
   "voice": {
     "banned": [
       "revolutionary",
       "industry-leading",
-      "thrilled to announce",
-      "excited to share",
-      "valued community",
       "game-changer",
       "game changer",
-      "unlock",
-      "unleash",
-      "elevate",
-      "dive in",
-      "dive into",
-      "delve",
-      "seamless",
-      "seamlessly",
+      "thrilled to announce",
+      "excited to share",
       "next level",
       "next-level",
-      "ultimate",
       "cutting-edge",
       "groundbreaking",
-      "journey",
-      "embark",
-      "supercharge",
-      "harness",
-      "empower",
-      "leverage",
-      "robust",
-      "immersive experience",
       "look no further",
       "you won't believe",
       "mind-blowing",
-      "buckle up",
       "without further ado",
       "in today's video",
-      "hey guys",
-      "testament to",
-      "epic",
-      "insane",
-      "crazy"
+      "hey guys"
     ],
     "rules": [
-      "No em-dash (U+2014) or en-dash (U+2013) anywhere. Use a comma, colon, period or plain hyphen.",
-      "Founder voice: a modder explaining to another player. 'We' for ReadyM, 'you' for the viewer.",
-      "Every option carries at least one concrete detail from the transcript: a step, a screen, a version or a number.",
-      "Contractions are fine. Digits for numbers. At most one exclamation mark per option.",
+      "The knowledge README sets the voice: person, tone, banned words, punctuation and spelling. These defaults apply where it is silent, and voice.banned is only a starting list.",
+      "Every option carries at least one concrete detail from the transcript: a step, a screen, a part, a version or a number.",
+      "Plain verbs. Contractions are fine. Digits for numbers. At most one exclamation mark per option.",
       "At most one intensifier per option. ALL CAPS only for one word in a hype-tone YouTube title.",
       "Emoji never replace words. No emoji walls. Counts follow params.emoji.",
       "At most one of the three options per platform opens with a question.",
       "No 'easy', 'fast', 'in X minutes' or 'free' unless the transcript and runtime prove it.",
       "Never fake typos, fake anecdotes or fake urgency to sound human.",
-      "What works now, plus one true limit where it fits. Never invent bugs or modesty.",
-      "Name the game in full and say 'multiplayer' in the title or first line.",
-      "Never reuse a date, build or 'Part x/y' template line across posts.",
-      "At least one concrete noun per option: a place, a player count, a system or a version."
+      "State the fact or the moment instead of staging it: no 'it's not X, it's Y', no question answered in the next line, no three fragments in a row for rhythm, no last line that repeats the post as a moral."
     ]
   },
   "principles": [
@@ -88,7 +61,7 @@
     {
       "id": "search-words-first",
       "title": "Lead with the words people search",
-      "rule": "Pick 1 to 2 main search words (for example 'Oblivion Remastered multiplayer server') and place them in the title and the first line of every description and caption.",
+      "rule": "Pick 1 to 2 main search words (for example 'replace disc brake pads') and place them in the title and the first line of every description and caption.",
       "why": "YouTube says to feature 1 to 2 main words in title and description. TikTok reads captions, voiceover and on-screen text. LinkedIn's feed model reads what a post is about.",
       "refs": [
         "yt-description-tips",
@@ -101,8 +74,8 @@
     {
       "id": "yt-front-load",
       "title": "Front-load YouTube titles",
-      "rule": "Game name, keyword and payoff inside the first ~50 characters. Total length usually 40 to 70, never over 100.",
-      "why": "Truncation length is not official, so protect the first ~50 chars. 30 to 50 chars did best overall and under 30 in gaming (correlational); how-to titles had a median of 55 chars.",
+      "rule": "Subject, keyword and payoff inside the first ~50 characters. Total length usually 40 to 70, never over 100.",
+      "why": "Truncation length is not official, so protect the first ~50 chars. 30 to 50 chars did best overall (vendor, correlational); how-to titles had a median of 55 chars.",
       "refs": [
         "air-titles-2026",
         "overseeros-howto-2026",
@@ -113,7 +86,7 @@
     {
       "id": "specific-over-generic",
       "title": "Specific beats clever",
-      "rule": "Name the real thing: the game, the screen, the step, the version. Prefer a specific frame over a generic formula or adjective.",
+      "rule": "Name the real thing: the product, the screen, the step, the version. Prefer a specific frame over a generic formula or adjective.",
       "why": "In 4M+ 2026 uploads, specific story frames beat generic formulas; plain how-to averaged 1.07x.",
       "refs": [
         "vidiq-title-formulas-2026"
@@ -122,11 +95,19 @@
     },
     {
       "id": "house-voice",
-      "title": "Write like one of us",
-      "rule": "Apply voice.rules and voice.banned to every option, every field, every platform.",
-      "why": "House rule. Hype and filler read as ads; plain specific copy reads as a modder talking.",
+      "title": "Brand voice from knowledge, plain defaults otherwise",
+      "rule": "Apply the voice set in /publish/knowledge/README.md to every option, field and platform. Where it is silent, apply voice.rules and voice.banned. Knowledge wins over this file on voice; the honesty rules and hard platform limits win over knowledge.",
+      "why": "Only the brand can say how it sounds. Without that, plain specific copy is the safe default, because hype and filler read as ads.",
       "refs": [],
       "weight": 3
+    },
+    {
+      "id": "rewrite-pass",
+      "title": "Run the rewrite pass the knowledge names",
+      "rule": "If /publish/knowledge/README.md names a rewrite or style pass, run it on every title, text, firstComment and thread post, and on the prose in why and notes, before writing copy.json. Save the final text only, with no change list. The pass never adds a fact: fix a vague line with a fact from the fact list or cut it. Leave hashtags, tags, links, handles, product names, chapter lines and words quoted from the video as they are.",
+      "why": "The panel posts copy.json as is, so the pass has to be finished before the file is written.",
+      "refs": [],
+      "weight": 2
     },
     {
       "id": "hashtags-few-relevant",
@@ -147,7 +128,7 @@
       "id": "statement-over-question",
       "title": "Statements, not question titles",
       "rule": "Do not end YouTube titles with a question. At most one question opener across the three options on any platform.",
-      "why": "Question-ending titles averaged 0.82x; questions were weak in gaming.",
+      "why": "Question-ending titles averaged 0.82x across 4M+ uploads (vendor, correlational).",
       "refs": [
         "vidiq-title-formulas-2026",
         "air-titles-2026"
@@ -157,8 +138,8 @@
     {
       "id": "how-to-for-search",
       "title": "Use how-to wording for searched tasks",
-      "rule": "When the video teaches a task people search for (hosting, installing, joining), one option should use plain how-to wording with the game name.",
-      "why": "How-to titles had a median of 1.60x channel baseline vs 0.99x, credited to search intent. Ranked server tutorials follow this pattern.",
+      "rule": "When the video teaches a task people search for (installing, fixing, setting up), one option should use plain how-to wording with the subject's full name.",
+      "why": "How-to titles had a median of 1.60x channel baseline vs 0.99x, credited to search intent. The ranked tutorials in the observed examples follow this pattern.",
       "refs": [
         "overseeros-howto-2026",
         "vidiq-title-formulas-2026",
@@ -243,7 +224,7 @@
     {
       "id": "yt-tags-light",
       "title": "YouTube tags for variants only",
-      "rule": "5 to 10 tags: the main keyword, name variants (obmp, oblivionmp, ob:mp) and common misspellings (oblivion remaster). Each max 100 chars, total max 500.",
+      "rule": "5 to 10 tags: the main keyword, name variants and common misspellings. Each max 100 chars, total max 500.",
       "why": "YouTube says tags play a minimal role and help mainly with misspellings.",
       "refs": [
         "yt-tags-help"
@@ -254,9 +235,8 @@
       "id": "freshness-tag",
       "title": "Version or year tag only when true",
       "rule": "Add a version, month or year to tutorial titles only when it is on screen and current.",
-      "why": "Ranked mod and server tutorials use freshness tags because setups change.",
+      "why": "Ranked tutorials in the observed examples carry a version or year because setups change (observed, one niche).",
       "refs": [
-        "ex-yt-kazzanski-version",
         "ex-yt-rockuzza-howto",
         "ex-yt-migrate-save"
       ],
@@ -265,7 +245,7 @@
     {
       "id": "reply-and-pin",
       "title": "Use the first comment for help, not hashtags",
-      "rule": "firstComment holds the docs link or a real support prompt. Never the hashtag block.",
+      "rule": "firstComment holds the main link or a real support prompt. Never the hashtag block.",
       "why": "Replying to comments lifted engagement on every platform Buffer measured.",
       "refs": [
         "buffer-engagement-2026"
@@ -275,8 +255,8 @@
     {
       "id": "original-voice",
       "title": "Make origin clear",
-      "rule": "Say 'we' and name ReadyM or the mod so it is clear we made the footage and the software.",
-      "why": "Meta and Instagram favour original content and reduce reach for reposts.",
+      "rule": "Write in the first person the knowledge README sets ('we' or 'I') and name the maker, so it is clear who made the footage and the thing shown.",
+      "why": "Meta and Instagram favor original content and reduce reach for reposts.",
       "refs": [
         "meta-original-2026",
         "fb-unoriginal-2025",
@@ -287,110 +267,57 @@
     },
     {
       "id": "known-links-only",
-      "title": "Facts and links from the content kit only",
-      "rule": "Links, invites, handles, versions, requirements and product facts come only from the obmp-readym-content-kit skill, /publish/knowledge or the video, copied character for character. Use the deepest page that fits. Missing link: leave it out and say so in notes. Never a placeholder, never a guess. Kit section 0 rules apply, and nothing from its Never claim or Internal only lists.",
-      "why": "The panel posts copy.json as is. A guessed docs URL went out in the first run and returned 404.",
-      "refs": [
-        "obmp-content-kit"
-      ],
+      "title": "Facts and links from knowledge or the video only",
+      "rule": "Links, handles, versions, prices, requirements and product facts come only from /publish/knowledge (and any skill it names) or the video, copied character for character. Use the deepest page that fits. Missing link: leave it out and say so in notes. Never a placeholder, never a guess. Nothing from the knowledge 'never claim' list.",
+      "why": "The panel posts copy.json as is, so a guessed URL or a placeholder goes out live.",
+      "refs": [],
       "weight": 3
     },
     {
-      "id": "impossible-moment",
-      "title": "Lead with the impossible social moment",
-      "rule": "On short-form and feed posts, the first line and the first 2 seconds show or name something players do together that the single-player game never allowed, in a named place or system. Feature lists, tooling and sysadmin steps belong in tutorials.",
-      "why": "Top posts at KCD:MP, Open77, Speclizer and ours are social moments (hacking real players 612,600; carts together; 4v4). Tooling and numbered clips got 40 to 487 views (measured 2026-11-09).",
+      "id": "moment-first",
+      "title": "Open short-form on the moment",
+      "rule": "On short-form and feed posts, the first line names the one concrete moment the clip shows: who does what, and where. Feature lists, tooling and setup steps belong in tutorials.",
+      "why": "TikTok asks for a hook in the first seconds and says many viewers watch muted, so the first line and the on-screen text carry it (official). That a named moment beats a feature list is unverified: check it against your own analytics.",
       "refs": [
-        "readym-social-voice",
-        "comp-open77-2026",
-        "comp-kcdmp-2026",
-        "comp-speclizer-2026"
-      ],
-      "weight": 3
-    },
-    {
-      "id": "game-plus-multiplayer",
-      "title": "Full game name plus 'multiplayer'",
-      "rule": "Titles and first lines name the game in full (Oblivion Remastered, Black Myth: Wukong; The Elder Scrolls IV: Oblivion Remastered in descriptions) and say 'multiplayer'. The project name alone is not what newcomers search.",
-      "why": "Open77 titles with 'Cyberpunk 2077 multiplayer' had higher medians: Shorts 1,245 vs 783, videos 1,657 vs 981. KCD:MP titles carry the full game name (measured 2026-11-09).",
-      "refs": [
-        "readym-social-voice",
-        "comp-open77-2026",
-        "comp-kcdmp-2026"
+        "tiktok-ca-elements"
       ],
       "weight": 2
     },
     {
-      "id": "candid-dev-voice",
-      "title": "What works now, plus one true limit",
-      "rule": "Write as a builder posting from inside the build: what we got working, present tense, plus one true candor line where it fits ('it's a beta, things break'). Never invent bugs or modesty.",
-      "why": "Speclizer's 'very broken and not a lot has been implemented yet' got 1,600,326 views on X. Open77's lowercase 'now works!' captions got 610K to 843K. KCD:MP puts a candor line in every description (measured 2026-11-09).",
+      "id": "full-name-plus-category",
+      "title": "The searched name, not only your own",
+      "rule": "Titles and first lines use the names and category words newcomers type, written in full (for example 'disc brake pads' next to the bike's model name). A project or product name alone is not what people who have never heard of it search for.",
+      "why": "Follows from featuring 1 to 2 main search words in the title and description (official). The size of the effect is unverified.",
       "refs": [
-        "readym-social-voice",
-        "comp-speclizer-2026",
-        "comp-open77-2026",
-        "comp-kcdmp-2026"
+        "yt-description-tips"
       ],
       "weight": 2
     },
     {
       "id": "access-moments",
-      "title": "Access posts drive shares and joins",
-      "rule": "Open beta live, a batch opening, a new server, a release, a countdown: say it with a real number or time and one working link. These are the posts that convert.",
-      "why": "Our highest TikTok share rates (1.0 to 1.7%) are all access posts, against about 0.01% on teasers (measured 2026-11-09, ours).",
-      "refs": [
-        "readym-social-voice",
-        "ours-tiktok-2026-11"
-      ],
-      "weight": 2
+      "title": "Availability posts carry a number and one link",
+      "rule": "A launch, an opening, a restock, a deadline or a countdown: say it with a real number or time and one working link.",
+      "why": "Unverified, no public study behind it. People can only act on the post if it gives the time and the link.",
+      "refs": [],
+      "weight": 1
     },
     {
       "id": "no-date-template",
-      "title": "No date or build templates",
-      "rule": "Never reuse the same date, build or 'Part x/y' line as a caption or title across posts. Each post names its own moment.",
-      "why": "Open77's monthly TikTok median fell from 26,600 to 627 once captions became a date template (median 944). 'Build.120 Changelog' got 97 views; 'Part 1/6' splits 237 to 812 (measured 2026-11-09).",
+      "title": "No templated captions",
+      "rule": "Never reuse the same date, version or 'Part x/y' line as the caption or title across posts. Each post names its own moment.",
+      "why": "YouTube asks for a unique description per video (official). The effect on short-form reach is unverified.",
       "refs": [
-        "readym-social-voice",
-        "comp-open77-2026"
+        "yt-description-tips"
       ],
-      "weight": 2
+      "weight": 1
     },
     {
       "id": "valid-cta",
       "title": "One CTA, a link that resolves today",
-      "rule": "One CTA per post, where the platform allows a link (description, bio, pinned or first comment, X reply). Use the kit's permanent invites and check every link on the day.",
-      "why": "KCD:MP's best Shorts still link an expired Discord invite, so their peak traffic hits a dead end (measured 2026-11-09).",
-      "refs": [
-        "readym-social-voice",
-        "comp-kcdmp-2026",
-        "obmp-content-kit"
-      ],
+      "rule": "One CTA per post, placed where the platform allows a link (description, bio, pinned or first comment, X reply). Use the permanent links from knowledge, and list in notes every link the user should check before posting.",
+      "why": "Old posts keep getting views, so an expired invite or a moved page leaves the CTA pointing at a dead end (observed).",
+      "refs": [],
       "weight": 2
-    },
-    {
-      "id": "yt-proof-asset",
-      "title": "YouTube long-form is the proof press embeds",
-      "rule": "Each milestone gets a dated YouTube long-form on the day: 3 to 5 minutes, chaptered, line 1 a premise with the full game name and 'multiplayer', line 2 the candor line or who we are.",
-      "why": "In all three comparables, press embedded the YouTube teaser or explainer, never a TikTok. KCD:MP's 4-minute launch-day video is its biggest (161,210 views) (measured 2026-11-09).",
-      "refs": [
-        "readym-social-voice",
-        "comp-kcdmp-2026",
-        "comp-open77-2026",
-        "comp-speclizer-2026"
-      ],
-      "weight": 2
-    },
-    {
-      "id": "short-cut-length",
-      "title": "Short-form cuts under about 45 seconds",
-      "rule": "Short-form clips stay under about 45 seconds; access and launch posts may run longer. If the clip handed to you is longer, say so in notes.",
-      "why": "Open77's top 5 TikToks run 31 to 61 s. Our 117 to 157 s OB:MP posts got 323 to 925 plays, while the 111 s WukongMP SDK open beta post got 425,100 at 8.96% likes (measured 2026-11-09).",
-      "refs": [
-        "readym-social-voice",
-        "comp-open77-2026",
-        "ours-tiktok-2026-11"
-      ],
-      "weight": 1
     }
   ],
   "platforms": {
@@ -412,15 +339,15 @@
         "placement": "Appended to the description by the panel. The first 3 show above the title. Never in the title."
       },
       "structure": [
-        "Title: game + keyword + payoff in the first ~50 chars; statement, not a question.",
+        "Title: subject + keyword + payoff in the first ~50 chars; statement, not a question.",
         "Line 1: what the viewer gets, with the 1 to 2 search words.",
-        "Line 2: who we are, one line ('We build OB:MP at ReadyM').",
+        "Line 2: who made it, in one line, in the knowledge voice.",
         "What you need (bullets when technical).",
         "Chapters: 00:00 first, 3+, ascending, 10s+ each.",
-        "Links from the content kit: server guide (Installation page), ReadyM Launcher (portal.ready.mp), Discord (discord.gg/obmp).",
+        "Links from knowledge or the video, deepest page that fits.",
         "Shorts: short hook-first title, 1-line description, 2 hashtags."
       ],
-      "cta": "After line 2 of the description, never in line 1. Pinned firstComment carries the docs link or a support prompt.",
+      "cta": "After line 2 of the description, never in line 1. Pinned firstComment carries the main link or a support prompt.",
       "firstComment": true,
       "avoid": [
         "Question-ending titles",
@@ -445,20 +372,8 @@
         "yt-ab-test-help",
         "vidiq-title-formulas-2026",
         "air-titles-2026",
-        "overseeros-howto-2026",
-        "readym-social-voice"
-      ],
-      "wins": [
-        "Milestone or launch day 'one evening on a server': 3 to 5 minutes, chaptered (KCD:MP gameplay teaser 161,210 views, embedded by press).",
-        "Dated explainers and tool walkthroughs: press embeds these, never TikTok (Open77, Speclizer).",
-        "Q&A builds the community: our WukongMP Q&A #1 had 20,196 views at 10.2% likes, our best like rate.",
-        "Concrete nouns after the project name ('Trailer #6 - bosses, bots and next steps!', 5.78% likes) beat label and numbered titles."
-      ],
-      "shortsWins": [
-        "One social moment in 15 to 40 seconds. Organic winners: OB:MP Trailer 4 (36,476, 8.89% likes), open beta LIVE (44,637, 8.35%), parkour and sneaking sync (15,355, 8.38%), LESS THAN 30 MINUTES (20,409, 7.07%).",
-        "Title: the moment, the game, 'multiplayer'. Flops: SDK and open-source explainers (223 to 1,874), POV (293), anything over about 60 s."
-      ],
-      "evidence": "measured 2026-11-09 on ours and 3 comparables; our biggest view counts look boosted (like rates 0.0 to 0.14%)"
+        "overseeros-howto-2026"
+      ]
     },
     "tiktok": {
       "label": "TikTok",
@@ -471,12 +386,12 @@
           2,
           4
         ],
-        "placement": "Appended after the caption by the panel. Specific first (#OBMP, #OblivionRemastered), at most one broad tag."
+        "placement": "Appended after the caption by the panel. Specific first, at most one broad tag."
       },
       "structure": [
         "Line 1: hook with the keyword in the first words.",
         "Line 2: one concrete detail from the video.",
-        "Optional CTA: 'Full walkthrough on our YouTube' for tutorials; for clips, Discord via the bio or the pinned comment. One CTA.",
+        "Optional CTA: 'Full walkthrough on our YouTube' for tutorials; for clips, the bio link or the pinned comment. One CTA.",
         "Default under 30 words; never over 90."
       ],
       "cta": "End of caption. Links are not clickable in captions, so point to YouTube or the bio.",
@@ -486,9 +401,7 @@
         "Keyword lists",
         "Captions that describe things not in the clip",
         "Over 90 words",
-        "'Part 1/6' splits",
-        "The same date or build line on every post",
-        "Information-only posts with no moment (roadmap, holiday, Q&A teaser)"
+        "The same date or version line on every post"
       ],
       "unverified": [
         "Hashtag cap of 5 (vendor and press reports, no TikTok statement)",
@@ -501,16 +414,8 @@
         "tiktok-search-insights-support",
         "planoly-tiktok-5-2025",
         "sel-tiktok-hashtags",
-        "socialinsider-captions-2026",
-        "readym-social-voice"
-      ],
-      "wins": [
-        "Impossible moment, 'it works now', a lore line, access posts with real numbers, build POV with creators tagged.",
-        "Under about 45 s; access and launch posts can run longer (WukongMP SDK open beta, 111 s, 425,100 plays at 8.96% likes).",
-        "Follow-through within days ('Next: Sandevistan'). Information-only posts flop (dev diary Q&A, roadmap, holiday: 348 to 925 plays).",
-        "Followers convert badly (Open77: 943 followers on about 4.43M views), so the CTA points to Discord via bio or the pinned comment."
-      ],
-      "evidence": "measured 2026-11-09; OB:MP TikTok like and share rates suggest boosting, so organic OB:MP hook evidence is thin"
+        "socialinsider-captions-2026"
+      ]
     },
     "instagram": {
       "label": "Instagram Reels",
@@ -553,13 +458,8 @@
         "hootsuite-ig-seo",
         "kontentino-ig-search",
         "circleboom-ig-30-2026",
-        "ig-originality-2022",
-        "readym-social-voice"
-      ],
-      "wins": [
-        "No data (login wall). Reuse the TikTok cut and hook; read Insights after 10 posts."
-      ],
-      "evidence": "unverified"
+        "ig-originality-2022"
+      ]
     },
     "facebook": {
       "label": "Facebook (Reels and feed)",
@@ -577,7 +477,7 @@
       "structure": [
         "Reels: a title (same promise as the YouTube title, shorter) plus a 30 to 60 word caption.",
         "Feed: 2 to 4 plain lines with the video uploaded natively.",
-        "Say 'we' so the footage reads as original."
+        "Say who made it, in the first person, so the footage reads as original."
       ],
       "cta": "Link in firstComment, never in the caption body.",
       "firstComment": true,
@@ -599,13 +499,8 @@
         "fb-links-comments-gamble",
         "fb-link-limit-test-2025",
         "socialinsider-captions-2026",
-        "ayrshare-char-limits",
-        "readym-social-voice"
-      ],
-      "wins": [
-        "No data. Lowest priority: native video, link in the first comment."
-      ],
-      "evidence": "unverified"
+        "ayrshare-char-limits"
+      ]
     },
     "linkedin": {
       "label": "LinkedIn",
@@ -621,8 +516,8 @@
         "placement": "Appended at the end by the panel."
       },
       "structure": [
-        "Line 1 stands alone above the fold: what we built or shipped, named plainly.",
-        "2 to 4 short paragraphs: what the video shows, who it is for, one honest detail from building it.",
+        "Line 1 stands alone above the fold: what was built or shipped, named plainly.",
+        "2 to 4 short paragraphs: what the video shows, who it is for, one honest detail from making it.",
         "Optional closing question that people in the field can answer."
       ],
       "cta": "Link in firstComment by default; a closing question only if it is real.",
@@ -644,13 +539,8 @@
         "sel-li-engagement-bait-2022",
         "ordinal-li-links",
         "socialinsider-captions-2026",
-        "buffer-engagement-2026",
-        "readym-social-voice"
-      ],
-      "wins": [
-        "Msk's profile, founder voice: a dated milestone in players or servers (not signups), one honest lesson, link in the first comment."
-      ],
-      "evidence": "unverified for us, no comparable data"
+        "buffer-engagement-2026"
+      ]
     },
     "twitter": {
       "label": "X",
@@ -678,9 +568,7 @@
         "Link-only posts (cards show no headline)",
         "Hashtag strings",
         "Emoji (2 chars each)",
-        "Threads padded to look important",
-        "Photo-only feature posts ('Leaderboards implemented!' 9,491 views)",
-        "Detail-only sync clips ('Eyeball sync' 26,814 vs 300K+ for player moments)"
+        "Threads padded to look important"
       ],
       "unverified": [
         "X Help Center advice of max 2 hashtags (reported, not read)"
@@ -691,16 +579,8 @@
         "x-bier-links-2025",
         "musk-hashtags-2024",
         "businesstoday-x-ad-hashtags-2025",
-        "techcrunch-x-link-cards-2023",
-        "readym-social-voice"
-      ],
-      "wins": [
-        "Native clip, 1 to 3 sentences (about 100 to 250 chars), first person, candid, 0 to 1 hashtag. Speclizer's first test: 1.6M views on X vs 79K for the same clip on YouTube.",
-        "Milestone with a before and after number ('up to 4v4, previously 1v1s only': 298,894 views, PC Gamer the next day).",
-        "Tease the next long video ('Progress update video this week!').",
-        "Reach comes from reposts: an aggregator's KCD:MP post got 12,986 likes vs 149 on the official post. Draft the pitch in notes; Msk sends it."
-      ],
-      "evidence": "measured 2026-11-09 on comparables; our X accounts are small (about 100 followers)"
+        "techcrunch-x-link-cards-2023"
+      ]
     },
     "threads": {
       "label": "Threads",
@@ -733,13 +613,8 @@
         "threads-api-posts",
         "techcrunch-threads-tags-2023",
         "threads-links-mosseri",
-        "buffer-engagement-2026",
-        "readym-social-voice"
-      ],
-      "wins": [
-        "No data. Adapt the X post and end on a real question."
-      ],
-      "evidence": "unverified"
+        "buffer-engagement-2026"
+      ]
     },
     "bluesky": {
       "label": "Bluesky",
@@ -775,13 +650,8 @@
         "bsky-referrals-2025",
         "bsky-custom-feeds-2023",
         "bsky-search-tips-2024",
-        "bsky-whats-next-2026",
-        "readym-social-voice"
-      ],
-      "wins": [
-        "No data. Adapt the X post; game name in plain text."
-      ],
-      "evidence": "unverified"
+        "bsky-whats-next-2026"
+      ]
     }
   },
   "angles": [
@@ -790,9 +660,8 @@
       "family": "search",
       "name": "Outcome",
       "when": "Default search option: what the viewer has at the end, with the keyword.",
-      "example": "Host Your Own Oblivion Remastered Multiplayer Server | OB:MP Guide",
+      "example": "How to Replace Disc Brake Pads on a Fernhollow Trail 2",
       "refs": [
-        "ex-yt-corukai-skyrim",
         "ex-yt-troublechute-series",
         "overseeros-howto-2026"
       ]
@@ -802,7 +671,7 @@
       "family": "search",
       "name": "Obstacle removed",
       "when": "The video clearly solves a step people get stuck on. Name the step; only if the transcript shows the fix.",
-      "example": "Oblivion Remastered Server Setup, From .NET Install to First Join",
+      "example": "New Brake Pads Too Tight: Push the Pistons Back First",
       "refs": [
         "ex-yt-no-port-forward",
         "ex-yt-actually-works"
@@ -813,7 +682,7 @@
       "family": "search",
       "name": "Time or effort",
       "when": "Only when the runtime and transcript prove the time claim.",
-      "example": "OB:MP Server Setup in [proven minutes] Minutes",
+      "example": "Replace Disc Brake Pads in [proven minutes] Minutes",
       "refs": [
         "ex-yt-time-promise",
         "vidiq-title-formulas-2026"
@@ -823,20 +692,10 @@
       "id": "proof",
       "family": "browse",
       "name": "Show it working",
-      "when": "The video has a strong visual moment: the admin panel, players joining, the server running.",
-      "example": "Our OB:MP Admin Panel, Page by Page",
+      "when": "The video has a strong visual moment: the finished result, the thing working, a before and after.",
+      "example": "Worn Brake Pads vs New, on the Same Hill",
       "refs": [
         "vidiq-title-formulas-2026"
-      ]
-    },
-    {
-      "id": "play-together",
-      "family": "browse",
-      "name": "Play together",
-      "when": "Audience is players. Lead with the social outcome, then the how.",
-      "example": "Oblivion Remastered, with your friends in Cyrodiil too. Here's how to host it.",
-      "refs": [
-        "air-titles-2026"
       ]
     },
     {
@@ -844,7 +703,7 @@
       "family": "browse",
       "name": "Honest curiosity",
       "when": "Browse feeds. Open a gap the video closes in the first seconds. No bait, no question title on YouTube.",
-      "example": "The 3 Things You Need to Host OB:MP",
+      "example": "The 2 Tools You Need to Replace Disc Brake Pads",
       "refs": [
         "ex-yt-hardware-haven",
         "vidiq-title-formulas-2026"
@@ -853,47 +712,39 @@
     {
       "id": "builder",
       "family": "voice",
-      "name": "From the team",
+      "name": "From the makers",
       "when": "Always one option. We made it; here is how to use it. Strongest on LinkedIn, X, Bluesky.",
-      "example": "We Built Oblivion Multiplayer. Here's How to Host It",
+      "example": "We Build the Trail 2. Here's How We Change Its Brake Pads",
       "refs": [
         "meta-original-2026",
         "li-feed-eng-2026"
       ]
     },
     {
-      "id": "impossible-moment",
+      "id": "moment",
       "family": "browse",
-      "name": "Impossible moment",
-      "when": "Short-form and feeds, when the clip shows players doing something the single-player game never allowed. Name the moment and the place first, then the game and 'multiplayer'.",
-      "example": "Parkour and co-op sneaking sync in OblivionMP",
+      "name": "The moment",
+      "when": "Short-form and feeds, when the clip has one striking moment. Name the moment and the place first, then the subject and the search words.",
+      "example": "20 hard stops down Mill Hill to bed in new disc brake pads",
       "refs": [
-        "readym-social-voice",
-        "comp-open77-2026",
-        "ours-yt-2026-11"
+        "tiktok-ca-elements"
       ]
     },
     {
       "id": "access",
       "family": "browse",
-      "name": "Access moment",
-      "when": "Open beta live, a batch opening, a new server, a release or a countdown. A real number or time and one working link.",
-      "example": "Batch 4 of WukongMP alpha opens in LESS THAN 30 MINUTES!",
-      "refs": [
-        "readym-social-voice",
-        "ours-tiktok-2026-11"
-      ]
+      "name": "Availability",
+      "when": "A launch, an opening, a restock, a deadline or a countdown. A real number or time and one working link.",
+      "example": "Trail 2 preorders open Friday at 9:00. 200 frames in the first batch.",
+      "refs": []
     },
     {
       "id": "candid-build",
       "family": "voice",
-      "name": "Candid build update",
-      "when": "X, YouTube descriptions and dev updates. What we got working, a before and after number if there is one, plus one true limit.",
-      "example": "We got [system from the video] working in Oblivion Remastered multiplayer. Still rough in [true limit from the video], fixing that next.",
-      "refs": [
-        "readym-social-voice",
-        "comp-speclizer-2026"
-      ]
+      "name": "Candid update",
+      "when": "X, YouTube descriptions and progress updates, when the knowledge voice allows candor. What works now, a before and after number if there is one, plus one true limit. Never invent a flaw.",
+      "example": "We got [thing from the video] working. Still rough in [true limit from the video], fixing that next.",
+      "refs": []
     }
   ],
   "params": {
@@ -907,8 +758,8 @@
     "tone": {
       "plain": "State what it is and what you get. Adjectives only when they carry a fact.",
       "hype": "Energy from facts and verbs. Allows one ALL CAPS word in a YouTube title and one exclamation mark per option. No banned words, no claims beyond the video.",
-      "dry-funny": "One understated line per option about the game or modding life. Never at the viewer's expense. Search words still lead on YouTube.",
-      "technical": "Name parts exactly as shown: runtime version, ports, config files, admin panel pages. Best for server hosts on YouTube, LinkedIn, Bluesky."
+      "dry-funny": "One understated line per option about the subject or the work behind it. Never at the viewer's expense. Search words still lead on YouTube.",
+      "technical": "Name parts exactly as shown: versions, part numbers, settings, file names. Best for expert audiences on YouTube, LinkedIn, Bluesky."
     },
     "length": {
       "short": {
@@ -946,9 +797,9 @@
       "none": "No ask. End on the last fact.",
       "watch": "Point to the full video ('Full walkthrough on our YouTube'); on YouTube point to the next video or playlist.",
       "comment": "One real question a viewer can answer from experience. Never 'comment YES' or 'agree?'.",
-      "follow": "A true reason to follow ('we post every OB:MP update here').",
-      "link": "Docs or download link placed per links-out-of-body.",
-      "discord": "Our Discord with a true reason; never invent channel names. Placement follows links-out-of-body."
+      "follow": "A true reason to follow ('we post every repair guide here').",
+      "link": "The link from the request or from knowledge, placed per links-out-of-body.",
+      "community": "The brand's community (a Discord server, forum or newsletter) with a true reason, using the invite or link from knowledge. Never invent invites or channel names. Placement follows links-out-of-body."
     },
     "keywords": "Must-include search words. First keyword inside the first ~50 chars of the YouTube title and in the first line of every description and caption; mention it for on-screen text in notes. Once per title, once or twice per body. Variants go in YouTube tags. Never a keyword list.",
     "emoji": {
@@ -965,19 +816,14 @@
       }
     },
     "hashtags": "Target count, capped by platforms.<key>.limits.hashtagsMax (Threads 1, Instagram 5, TikTok 5). 0 is valid. Specific first, at most one broad tag, no generic tags, never inline in text.",
-    "language": "BCP-47 code. Write natively, do not translate idioms. Keep proper names unchanged: Oblivion Remastered, OB:MP, ReadyM, WukongMP. Use local search words for multiplayer and server. For non-English Bluesky posts add a notes line to set the post language.",
+    "language": "BCP-47 code. Write natively, do not translate idioms. Keep the proper names from knowledge unchanged. Use the local search words for the subject. For non-English Bluesky posts add a notes line to set the post language.",
     "humanize": {
-      "0": "Clean neutral copy. Banned list and dash rule still apply.",
-      "1": "House voice: contractions, plain verbs, no hype.",
-      "2": "Plus 'we' and one maker's detail from the transcript.",
-      "3": "Plus one honest founder aside (what was hard, what we changed), uneven sentence lengths, fragments allowed. Never fake typos or stories."
+      "0": "Clean neutral copy. Knowledge rules on banned words and punctuation still apply.",
+      "1": "Plain voice: contractions, plain verbs, no hype.",
+      "2": "Plus the first person from knowledge ('we' or 'I') and one maker's detail from the transcript.",
+      "3": "Plus one honest aside (what was hard, what changed), uneven sentence lengths, fragments allowed. Never fake typos or stories."
     },
-    "audience": {
-      "server-hosts": "Requirements and steps up front, technical names exact.",
-      "players": "Lead with playing together; light on setup.",
-      "modders": "What is under the hood, tooling, how it fits other mods.",
-      "industry": "What ReadyM does for single-player games and why it matters; LinkedIn first."
-    },
-    "notes": "User free text. Follow it unless it breaks a hard rule (honesty, limits, dashes, banned words); then follow the rule and explain in that platform's notes."
+    "audience": "Free text from the panel. It sets the reader's vocabulary and what goes up front: beginners get the outcome and the steps, experts get exact names and how it works inside, buyers get the price and what they need, industry peers get what was built and why (LinkedIn first).",
+    "notes": "User free text. Follow it unless it breaks a hard rule (honesty, platform limits, the knowledge 'never claim' list); then follow the rule and explain in that platform's notes."
   }
 }

@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest, windows-latest, ubuntu-latest]
         node: [22, 24]
     runs-on: ${{ matrix.os }}
     steps:
@@ -28,6 +28,9 @@ jobs:
         run: npm run smoke
       - name: Doctor (informational)
         run: npm run doctor
+        continue-on-error: true
+      - name: Service status (informational)
+        run: npm run service -- status
         continue-on-error: true
       - name: Install panels into a scratch project folder
         shell: bash

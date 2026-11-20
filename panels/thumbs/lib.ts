@@ -1,65 +1,14 @@
-// Thumbnails panel helpers: bridge client, font embedding, rasterizing, measuring and the guideline checks.
+// Thumbnails panel helpers: project file paths, font embedding, rasterizing, measuring and the guideline checks.
 import { domToCanvas } from 'modern-screenshot'
-import { getInfo as firaInfo } from '@remotion/google-fonts/FiraSans'
-import { FIRA_FAMILY, headlineLines } from '../../thumbs/ThumbArt'
+import { headlineLines } from '../../thumbs/ThumbArt'
+import { colorOf, rgbOf, type Brand } from '../../thumbs/ui/brand'
+import { fontFiles, fontState, type FontDef } from '../../thumbs/ui/fonts'
 import { PRESETS, flatten, type BadgeEl, type Design, type HeadlineEl, type PresetId, type Rect, type Zone } from '../../thumbs/model'
 
-export const BRIDGE = 'http://127.0.0.1:47680'
-export const TOKEN_KEY = 'kino-terminal:token' // shared with the Terminal, YT Downloader and Voiceover panels, device-local
 export const DESIGNS_PATH = '/thumbs/designs.json'
+export const BRAND_PATH = '/thumbs/brand.json'
 export const SKILL_DIR = '/thumbs/skill'
 export const RULES_PATH = '/thumbs/skill/rules.json'
-const PETROCK_URL = 'https://fonts.cdnfonts.com/s/241/Kingthings_Petrock.woff'
-
-// Library media used by the art, as bare asset ids
-export const ASSET_IDS = {
-	logo: 'd33465ca-dbfd-4edc-8219-efed993c8c14',
-	keyart: '157e250d-0e50-4718-a50c-e7490c5ee11c',
-	tower: '066d753d-4ba9-49d6-a531-1ece9640627e',
-	bridge: '0ebec19d-58a8-452d-bde1-ed6e12976f00',
-	rumare: 'f470154f-4891-4c84-94d9-ef08704b57ad',
-	wallpaper: 'abcd4758-f49d-4827-a4db-cb0c8bd6542f',
-}
-
-// ---------- bridge ----------
-export class BridgeError extends Error {
-	status: number
-	constructor(message: string, status: number) {
-		super(message)
-		this.status = status
-	}
-}
-
-export const api = async (path: string, init?: { method?: string; body?: unknown }) => {
-	const token = localStorage.getItem(TOKEN_KEY)
-	if (!token) throw new BridgeError('Not connected.', 401)
-	let response: Response
-	try {
-		response = await fetch(BRIDGE + path, {
-			method: init?.method ?? 'GET',
-			headers: { authorization: `Bearer ${token}`, ...(init?.body !== undefined ? { 'content-type': 'application/json' } : {}) },
-			body: init?.body !== undefined ? JSON.stringify(init.body) : undefined,
-		})
-	} catch {
-		throw new BridgeError('The Kino bridge is not running.', 0)
-	}
-	const body = await response.json().catch(() => ({}))
-	if (!response.ok) throw new BridgeError(typeof body.error === 'string' ? body.error : `Request failed (${response.status}).`, response.status)
-	return body
-}
-
-export const apiBlob = async (path: string) => {
-	const token = localStorage.getItem(TOKEN_KEY)
-	if (!token) throw new BridgeError('Not connected.', 401)
-	let response: Response
-	try {
-		response = await fetch(BRIDGE + path, { headers: { authorization: `Bearer ${token}` } })
-	} catch {
-		throw new BridgeError('The Kino bridge is not running.', 0)
-	}
-	if (!response.ok) throw new BridgeError(`Image request failed (${response.status}).`, response.status)
-	return response.blob()
-}
 
 // ---------- small utils ----------
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -72,10 +21,16 @@ export const toDataUrl = (blob: Blob) =>
 		reader.readAsDataURL(blob)
 	})
 export const toBlob = (canvas: HTMLCanvasElement, type: string, quality?: number) =>
-	new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => (blob ? resolve(blob) : reject(new Error('Could not encode the image.'))), type, quality))
+	new Promise<Blob>((resolve, reject) => {
+		try {
+			canvas.toBlob(blob => (blob ? resolve(blob) : reject(new Error('Could not encode the image.'))), type, quality)
+		} catch {
+			// a canvas that drew a cross-origin image cannot be read back
+			reject(new Error('The browser blocked the export because an image came from another site. Import that image into the Kino library and pick it from there.'))
+		}
+	})
 export const fmtBytes = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(2)} MB` : `${Math.round(n / 1024)} KB`)
 export const fmtClock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}`
-export const rid = () => Math.random().toString(36).slice(2, 10)
 export const slug = (text: string) =>
 	text
 		.normalize('NFKD')
@@ -86,33 +41,34 @@ export const slug = (text: string) =>
 		.slice(0, 60) || 'thumbnail'
 
 // ---------- fonts: SVG snapshots cannot see document fonts, so embed them as data URLs ----------
-let fontCss: Promise<string> | null = null
-export const buildFontCss = () =>
-	(fontCss ??= (async () => {
-		const faces: string[] = []
-		const add = async (family: string, url: string | undefined, weight: number, format: string) => {
-			if (!url) return
-			try {
-				const response = await fetch(url, { mode: 'cors' })
-				if (!response.ok) return
-				const data = await toDataUrl(await response.blob())
-				faces.push(`@font-face{font-family:"${family}";src:url(${data}) format("${format}");font-weight:${weight};font-style:normal;font-display:block}`)
-			} catch {}
-		}
-		const normal = (firaInfo() as any).fonts?.normal ?? {}
-		await Promise.all([
-			add('Kingthings Petrock', PETROCK_URL, 400, 'woff'),
-			...[400, 600, 700, 800, 900].map(w => add(FIRA_FAMILY, normal[String(w)]?.latin, w, 'woff2')),
-		])
-		await Promise.all([document.fonts.load('400 100px "Kingthings Petrock"'), ...[600, 800, 900].map(w => document.fonts.load(`${w} 100px "${FIRA_FAMILY}"`))]).catch(() => {})
-		return faces.join('\n')
-	})())
+const faces = new Map<string, Promise<string>>()
+const face = (file: { family: string; weight: string; url: string; format: string }) => {
+	const key = `${file.family}|${file.weight}|${file.url}`
+	let made = faces.get(key)
+	if (!made) {
+		made = fetch(file.url, { mode: 'cors' })
+			.then(response => (response.ok ? response.blob() : Promise.reject(new Error(String(response.status)))))
+			.then(toDataUrl)
+			.then(data => `@font-face{font-family:"${file.family}";src:url(${data}) format("${file.format}");font-weight:${file.weight};font-style:normal;font-display:block}`)
+			.catch(() => {
+				// a failed download is tried again on the next export instead of being remembered
+				faces.delete(key)
+				return ''
+			})
+		faces.set(key, made)
+	}
+	return made
+}
+/** @font-face rules, with the files inlined, for the fonts a design draws with. */
+export const buildFontCss = async (fonts: FontDef[]) => (await Promise.all(fonts.flatMap(fontFiles).map(face))).filter(Boolean).join('\n')
+/** True once every font has loaded or given up, so text is measured in its final font. */
+export const fontsSettled = (fonts: FontDef[]) => fonts.every(f => fontState(f) === 'ready' || fontState(f) === 'failed')
 
 // ---------- render, measure, rasterize ----------
 export type Box = { el: string; role: string; count: boolean; fs: number; cap: number; x: number; y: number; w: number; h: number; text: string }
 
 // Wait until the offscreen Thumbnail shows the requested render, images are decoded and fonts settled
-export const settle = async (host: HTMLElement, key: string, timeout = 8000) => {
+export const settle = async (host: HTMLElement, key: string, fonts: FontDef[] = [], timeout = 8000) => {
 	const t0 = performance.now()
 	let root: HTMLElement | null = null
 	while (performance.now() - t0 < timeout) {
@@ -123,6 +79,8 @@ export const settle = async (host: HTMLElement, key: string, timeout = 8000) => 
 	if (!root || root.dataset.key !== key) throw new Error('The thumbnail did not render in time.')
 	await Promise.all(Array.from(root.querySelectorAll('img')).map(img => (img.complete && img.naturalWidth ? null : img.decode().catch(() => {}))))
 	await document.fonts.ready
+	// a font still on its way would change the text's size after the snapshot: wait, but not forever (fonts give up on their own)
+	for (let i = 0; i < 100 && !fontsSettled(fonts); i++) await sleep(150)
 	await raf()
 	await raf()
 	return root
@@ -136,6 +94,8 @@ export const measureBoxes = (root: HTMLElement, W: number): Box[] => {
 		.map(el => {
 			const r = el.getBoundingClientRect()
 			return {
+				// the placed element or stack item this box belongs to, so parts of one element are never compared with each other
+				el: el.closest('[data-el]')?.getAttribute('data-el') ?? '',
 				role: el.dataset.thumb ?? '',
 				count: el.dataset.count === '1',
 				fs: Number(el.dataset.fs) || 0,
@@ -149,8 +109,8 @@ export const measureBoxes = (root: HTMLElement, W: number): Box[] => {
 		})
 }
 
-export const rasterize = async (player: HTMLElement, scale: number) =>
-	domToCanvas(player, { scale, font: { cssText: await buildFontCss() }, backgroundColor: '#0d0b09' } as any)
+export const rasterize = async (player: HTMLElement, scale: number, fonts: FontDef[], page: string) =>
+	domToCanvas(player, { scale, font: { cssText: await buildFontCss(fonts) }, backgroundColor: page } as any)
 
 export const shrink = (canvas: HTMLCanvasElement, width: number) => {
 	const out = document.createElement('canvas')
@@ -179,36 +139,45 @@ export const encode = async (canvas: HTMLCanvasElement, format: 'auto' | 'png', 
 }
 
 // ---------- pixel stats ----------
-export type Stats = { warm: number; red: number; black: number; white: number }
-export const colorStats = (canvas: HTMLCanvasElement): Stats => {
+export type Stats = { accent: number | null; red: number; black: number; white: number }
+const hueSat = (r: number, g: number, b: number) => {
+	const max = Math.max(r, g, b)
+	const min = Math.min(r, g, b)
+	const l = (max + min) / 2
+	const d = max - min
+	const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1))
+	let hue = 0
+	if (d) hue = max === r ? 60 * (((g - b) / d) % 6) : max === g ? 60 * ((b - r) / d + 2) : 60 * ((r - g) / d + 4)
+	if (hue < 0) hue += 360
+	return { hue, s, l }
+}
+/** Hue of the brand accent in degrees. Null for grays and colors that are not hex: those cannot be counted. */
+export const accentHue = (brand: Brand) => {
+	const rgb = rgbOf(colorOf('accent', brand, 'accent'))
+	if (!rgb) return null
+	const { hue, s } = hueSat(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255)
+	return s < 0.3 ? null : hue
+}
+export const colorStats = (canvas: HTMLCanvasElement, accent: number | null): Stats => {
 	const small = shrink(canvas, 96)
 	const data = small.getContext('2d')!.getImageData(0, 0, small.width, small.height).data
-	let warm = 0
+	let near = 0
 	let red = 0
 	let black = 0
 	let white = 0
 	let n = 0
 	for (let i = 0; i < data.length; i += 4) {
-		const r = data[i] / 255
-		const g = data[i + 1] / 255
-		const b = data[i + 2] / 255
-		const max = Math.max(r, g, b)
-		const min = Math.min(r, g, b)
-		const l = (max + min) / 2
-		const d = max - min
-		const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1))
-		let hue = 0
-		if (d) hue = max === r ? 60 * (((g - b) / d) % 6) : max === g ? 60 * ((b - r) / d + 2) : 60 * ((r - g) / d + 4)
-		if (hue < 0) hue += 360
+		const { hue, s, l } = hueSat(data[i] / 255, data[i + 1] / 255, data[i + 2] / 255)
 		n++
 		if (l < 0.09) black++
 		else if (l > 0.9 && s < 0.2) white++
 		if (s > 0.45 && l > 0.22 && l < 0.85) {
-			if (hue >= 14 && hue <= 50) warm++
-			else if (hue < 12 || hue > 345) red++
+			if (accent != null && Math.min(Math.abs(hue - accent), 360 - Math.abs(hue - accent)) <= 20) near++
+			if (hue < 12 || hue > 345) red++
 		}
 	}
-	return { warm: warm / n, red: red / n, black: black / n, white: white / n }
+	n = Math.max(1, n)
+	return { accent: accent == null ? null : near / n, red: red / n, black: black / n, white: white / n }
 }
 
 // ---------- taste rules (/thumbs/skill/rules.json, written by the thumbnail skill) ----------
@@ -222,10 +191,10 @@ export type Rules = {
 	principles?: { id: string; title: string; rule: string; why?: string; refs?: string[]; weight?: number }[]
 	rubric?: { id: string; question: string; weight?: number; refs?: string[] }[]
 	platforms?: Partial<Record<PresetId, { notes?: string[]; limits?: Partial<Limits>; safe?: Rect; zones?: Zone[]; refs?: string[] }>>
-	checks?: { warmMin?: number; blackMax?: number; whiteMax?: number; redMax?: number; titleOverlap?: number }
-	copy?: { do?: string[]; dont?: string[]; patterns?: string[] }
+	checks?: { accentMin?: number; warmMin?: number; blackMax?: number; whiteMax?: number; redMax?: number; titleOverlap?: number }
+	copy?: { do?: string[]; dont?: string[]; patterns?: (string | { pattern?: string; use?: string })[] }
 	recipes?: Recipe[]
-	examples?: { title?: string; channel?: string; url?: string; platform?: string; why?: string; refs?: string[] }[]
+	examples?: { title?: string; channel?: string; url?: string; platform?: string; why?: string; takeaways?: string[] | string; refs?: string[] }[]
 	references?: Ref[]
 }
 export const DEFAULT_LIMITS: Limits = { wordsOk: 4, wordsWarn: 6, elementsOk: 3, elementsWarn: 4, capPxOk: 8, capPxWarn: 5, texturePx: 4 }
@@ -280,7 +249,7 @@ const claimedSeconds = (badge: string) => {
 	return Number(m[1]) * (m[2].startsWith('m') ? 60 : 1)
 }
 
-const ROLE_LABEL: Record<string, string> = { title: 'headline', text: 'text', badge: 'badge', logo: 'logo', card: 'status card', image: 'image', emblem: 'emblem', arrow: 'arrow' }
+const ROLE_LABEL: Record<string, string> = { title: 'headline', text: 'text', badge: 'badge', logo: 'logo', card: 'info card', image: 'image', emblem: 'icon', arrow: 'arrow', shape: 'shape' }
 
 export const runChecks = (opts: {
 	design: Design
@@ -291,15 +260,16 @@ export const runChecks = (opts: {
 	videoSeconds: number
 	ytCount: number
 	rules: Rules | null
+	brand: Brand
 }): Check[] => {
-	const { design: d, boxes, stats, bytes, videoTitle, videoSeconds, ytCount, rules } = opts
+	const { design: d, boxes, stats, bytes, videoTitle, videoSeconds, ytCount, rules, brand } = opts
 	const p = platformOf(d.preset, rules)
 	const L = p.limits
-	const ck = { warmMin: 0.04, blackMax: 0.55, whiteMax: 0.45, redMax: 0.3, titleOverlap: 0.04, ...(rules?.checks ?? {}) }
+	const ck = { accentMin: rules?.checks?.warmMin ?? 0.04, blackMax: 0.55, whiteMax: 0.45, redMax: 0.3, titleOverlap: 0.04, ...(rules?.checks ?? {}) }
 	const out: Check[] = []
 	const els = flatten(d.elements).filter(e => e.visible !== false)
 	const headline = els.find(e => e.type === 'headline') as HeadlineEl | undefined
-	const titleWords = headline ? words(headlineLines(headline).join(' ')) : []
+	const titleWords = headline ? words(headlineLines(headline, brand).join(' ')) : []
 
 	// Word count
 	const n = titleWords.length
@@ -356,7 +326,7 @@ export const runChecks = (opts: {
 		id: 'zones',
 		level: hard.length ? 'fail' : soft.length ? 'warn' : 'ok',
 		label: hard.length ? 'Covered by platform UI' : soft.length ? 'Touches a crop or overlay' : 'Clear of platform UI',
-		detail: hard.length ? describe(hard) : soft.length ? describe(soft) : `Nothing important under the ${Array.from(new Set(p.zones.map(z => z.group))).join(', ')} overlays.`,
+		detail: hard.length ? describe(hard) : soft.length ? describe(soft) : p.zones.length ? `Nothing important under the ${Array.from(new Set(p.zones.map(z => z.group))).join(', ')} overlays.` : 'No overlays are listed for this size.',
 	})
 
 	// Safe area: everything that carries meaning sits inside it
@@ -398,17 +368,18 @@ export const runChecks = (opts: {
 	})
 
 	if (stats) {
-		out.push({
-			id: 'warm',
-			level: stats.warm >= ck.warmMin ? 'ok' : 'warn',
-			label: `Warm accent ${(stats.warm * 100).toFixed(1)}% of pixels`,
-			detail: stats.warm >= ck.warmMin ? 'Ember orange separates it from the feed.' : 'Add an orange accent word or badge so it stands out.',
-		})
+		if (stats.accent != null)
+			out.push({
+				id: 'accent',
+				level: stats.accent >= ck.accentMin ? 'ok' : 'warn',
+				label: `Accent color ${(stats.accent * 100).toFixed(1)}% of pixels`,
+				detail: stats.accent >= ck.accentMin ? 'The accent color sets it apart from the feed.' : 'Add an accent word or a badge in the brand accent so it stands out.',
+			})
 		const dom = stats.black > ck.blackMax ? 'black' : stats.white > ck.whiteMax ? 'white' : stats.red > ck.redMax ? 'red' : null
 		out.push({
 			id: 'dominance',
 			level: dom ? 'warn' : 'ok',
-			label: dom ? `Mostly ${dom}` : 'Not dominated by feed UI colours',
+			label: dom ? `Mostly ${dom}` : 'Not dominated by feed UI colors',
 			detail: dom
 				? `${Math.round((dom === 'black' ? stats.black : dom === 'white' ? stats.white : stats.red) * 100)}% ${dom}: blends into the feed's red, white and black UI. Lift the background or lower Dim.`
 				: `Black ${Math.round(stats.black * 100)}%, white ${Math.round(stats.white * 100)}%, red ${Math.round(stats.red * 100)}%.`,

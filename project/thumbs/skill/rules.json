@@ -1,14 +1,14 @@
 {
  "version": 1,
  "name": "thumbnail-taste",
- "updated": "2026-11-08",
- "summary": "Taste rules for ReadyM thumbnails and covers, drawn from two 2026 thumbnail studies, YouTube's own testing docs, official safe-zone files and 37 real gaming and server-tutorial thumbnails. One clear idea per thumbnail, players shown together, an outcome promised in a few words, and everything kept inside each platform's safe area.",
+ "updated": "2026-11-19",
+ "summary": "Brand-neutral taste rules for video thumbnails and vertical covers, drawn from two 2026 thumbnail studies, YouTube's own testing docs, official safe-zone files and 18 observed gaming and tutorial thumbnails. One clear idea per thumbnail, the result shown in use, an outcome promised in a few words, and everything kept inside each platform's safe area. Colors, fonts, logo and art come from the project's brand kit in /thumbs/brand.json.",
  "principles": [
   {
    "id": "one-idea",
    "title": "One idea that reads at sidebar size",
    "rule": "One subject and one promise. Check it at 168 px wide (and 130 px for grids). If you have to explain it, cut it.",
-   "why": "Large studies find winners and losers look alike on surface features, so the edge is a clear idea, not effects (measured). The weakest tutorials we saw cram three messages into one frame and sit at 0.5x (observed).",
+   "why": "Large studies find winners and losers look alike on surface features, so the edge is a clear idea, not effects (measured). The weakest tutorials in the observed examples cram three messages into one frame and sit at 0.5x (observed).",
    "refs": [
     "eden-507k-2026",
     "oneof10-trends-2026",
@@ -31,7 +31,7 @@
   {
    "id": "complement-title",
    "title": "Thumbnail adds, title explains",
-   "rule": "The title holds the search words (game, OB:MP, Windows, dedicated server). The thumbnail holds the outcome or the hook. Do not repeat the title.",
+   "rule": "The title holds the search words (product, task, platform, version). The thumbnail holds the outcome or the hook. Do not repeat the title.",
    "why": "Viewers read thumbnail and title together (ETRA 2018). Verbatim repeats are rare among breakouts (6.3%, measured). The leaked MrBeast guide treats both as one expectation.",
    "refs": [
     "etra-2018-eyetracking",
@@ -42,10 +42,10 @@
    "weight": 3
   },
   {
-   "id": "show-players",
-   "title": "Show the multiplayer, not the menu",
-   "rule": "For multiplayer videos put two or more players in one frame and mark them as different people: P1/P2 tags, name tags, colour outlines, a 4 VS 1.",
-   "why": "Every multiplayer outlier we found does this: DunderHeads P1/P2 at 6.4x, Goldie's tagged pets, Spiffing's 4 VS 1 at 7.6M views (observed). 1of10: multiple faces beat a single face (measured, second hand). Our whole pitch is 'this game, with friends'.",
+   "id": "show-in-use",
+   "title": "Show it in use, not the menu",
+   "rule": "Show the result happening: the finished thing, people using it, the moment itself. Not a settings screen or a logo on a backdrop. When the video is about doing something together or against each other, put two or more people in one frame and mark them apart: tags, name labels, outline colors, a 4 VS 1.",
+   "why": "The multiplayer outliers in the observed examples all do this: P1/P2 tags at 6.4x, tagged pets as players, a 4 VS 1 at 7.6M views (observed, one niche). 1of10: multiple faces beat a single face (measured, second hand).",
    "refs": [
     "sej-1of10-faces-2025",
     "ex-dunderheads-howto",
@@ -57,8 +57,8 @@
   {
    "id": "subject-not-face",
    "title": "A face is optional, a clear subject is not",
-   "rule": "Use a real face only with a real reaction. Otherwise a game character, a helmet or the server card is the subject. No stock shocked faces.",
-   "why": "Faces barely separate winners: 84.2% vs 82.2%, inside noise (Eden); 1of10 finds it niche dependent; only 5% of breakouts use exaggerated expressions (vidIQ). Server tutorial winners at 20x+ use game art, not faces (observed).",
+   "rule": "Use a real face only with a real reaction. Otherwise the product, a character or the finished result is the subject. No stock shocked faces.",
+   "why": "Faces barely separate winners: 84.2% vs 82.2%, inside noise (Eden); 1of10 finds it niche dependent; only 5% of breakouts use exaggerated expressions (vidIQ). The server tutorial winners at 20x+ in the observed examples use game art, not faces (observed, one niche).",
    "refs": [
     "eden-507k-2026",
     "sej-1of10-faces-2025",
@@ -70,8 +70,8 @@
   {
    "id": "promise-outcome",
    "title": "Tutorials promise an outcome, a time or a price",
-   "rule": "Name what the viewer gets: YOUR OWN SERVER, FREE, IN 5 MIN, FULL SERVER. Not the process: INSTALLING, CONFIGURING, PART 1.",
-   "why": "FREE VALHEIM SERVER did 25.6x on a 1.1K sub channel, IN 5 MINUTES 6.5x, FULL SERVER BY AI 32.7x (observed). MrBeast guide: pick the most interesting version of the idea.",
+   "rule": "Name what the viewer gets: FREE, IN 5 MIN, YOUR OWN [THING], DONE. Not the process: INSTALLING, CONFIGURING, PART 1.",
+   "why": "FREE VALHEIM SERVER did 25.6x on a 1.1K sub channel, IN 5 MINUTES 6.5x, FULL SERVER BY AI 32.7x (observed, one niche). MrBeast guide: pick the most interesting version of the idea.",
    "refs": [
     "mrbeast-guide-willison",
     "ex-allthingshosting-valheim",
@@ -82,24 +82,22 @@
    "weight": 3
   },
   {
-   "id": "game-anchor",
-   "title": "Name the game in a glance",
-   "rule": "Logo, iconic character or signature place. Oblivion: gate, Imperial City, armour. Wukong: the Destined One. Our OB:MP wordmark is secondary and small.",
-   "why": "Nearly every server tutorial outlier shows the game logo large, and Wukong winners lead with the hero (observed). People search by game.",
+   "id": "subject-anchor",
+   "title": "Name the subject at a glance",
+   "rule": "A logo, the product, a recognizable character or a signature place tells the viewer what the video is about before they read a word. Your own wordmark is secondary and small.",
+   "why": "Nearly every tutorial outlier in the observed examples shows the logo of the thing it covers, large (observed, one niche). People search by subject, not by channel.",
    "refs": [
     "ex-troublechute-palworld",
     "ex-troublechute-valheim",
-    "ex-highwaytrooper-fivem",
-    "ex-zanny-wukong",
-    "ex-juicehead-15features"
+    "ex-highwaytrooper-fivem"
    ],
    "weight": 2
   },
   {
    "id": "separation",
    "title": "Separate the subject, keep the palette small",
-   "rule": "Light subject and words on a calm dark ground, one accent (ember). No field of YouTube red, white or black.",
-   "why": "Average brightness, contrast and saturation do not separate winners (Eden), but 89% of breakouts have a face or high contrast (vidIQ): separation matters, raw brightness does not. 1of10 suggests about 3 colours (vendor claim).",
+   "rule": "The subject and the words stand clear of a calm ground, with one accent color from the brand kit. No field of YouTube red, white or black.",
+   "why": "Average brightness, contrast and saturation do not separate winners (Eden), but 89% of breakouts have a face or high contrast (vidIQ): separation matters, raw brightness does not. 1of10 suggests about 3 colors (vendor claim).",
    "refs": [
     "eden-507k-2026",
     "vidiq-2026-study",
@@ -110,7 +108,7 @@
   {
    "id": "truthful",
    "title": "Only promise what the video shows early",
-   "rule": "Every number, time, price and feature on the thumbnail must be true and visible in the first minute. Real player counts on server cards.",
+   "rule": "Every number, time, price and feature on the thumbnail must be true and visible in the first minute. Real names and counts on an info card.",
    "why": "Test & Compare picks on watch time share, not CTR, so a bait variant loses the test. The MrBeast guide ties mismatch to lower retention.",
    "refs": [
     "yt-ab-test-help",
@@ -123,8 +121,8 @@
   {
    "id": "big-ideas",
    "title": "Test three ideas, not three tints",
-   "rule": "The three Test & Compare variants differ in concept (players, promise, proof), not font or colour.",
-   "why": "Similar variants end as Performed same or run long (YouTube). One gaming case moved CTR 4.2% to 7.8% with a full concept change (single vendor case, unverified).",
+   "rule": "The three Test & Compare variants differ in concept (subject, promise, proof), not font or color.",
+   "why": "Similar variants end as Performed same or run long (YouTube). One gaming channel moved CTR 4.2% to 7.8% with a full concept change (single vendor case, unverified).",
    "refs": [
     "yt-test-compare-help",
     "yt-ab-test-help",
@@ -134,21 +132,20 @@
   },
   {
    "id": "series-frame",
-   "title": "One recognisable tutorial frame",
-   "rule": "Keep one ReadyM guide look (frame, type, accent) and change the subject per video.",
-   "why": "TroubleChute's Palworld and Valheim guides share one framed card and both run 23x to 27x its median; gameranx's Before You Buy label does the same (observed).",
+   "title": "One recognizable series frame",
+   "rule": "Keep one look for a series (frame, type, accent, logo placement) and change the subject per video.",
+   "why": "One channel's two server guides share a framed card and run 23x and 27x its median (observed).",
    "refs": [
     "ex-troublechute-palworld",
-    "ex-troublechute-valheim",
-    "ex-gameranx-beforeyoubuy"
+    "ex-troublechute-valheim"
    ],
    "weight": 1
   },
   {
    "id": "arrows-earn-it",
    "title": "One arrow, only if it explains",
-   "rule": "An arrow links two things (prompt to server, solo to crowd). Never decoration, never two.",
-   "why": "Drawn graphics sit just above noise (41.8% vs 38.1%, Eden). FiveM guides use one arrow to show cause and effect (observed).",
+   "rule": "An arrow links two things (before to after, cause to effect). Never decoration, never two.",
+   "why": "Drawn graphics sit just above noise (41.8% vs 38.1%, Eden). The observed guides that use an arrow use one, to show cause and effect.",
    "refs": [
     "eden-507k-2026",
     "ex-guiderealm-fivem",
@@ -174,7 +171,7 @@
   {
    "id": "vertical-poster",
    "title": "A vertical cover is a poster, not a frame",
-   "rule": "Centre on x 50, keep words between about 22% and 65% of the height. Design for the grid and shelf, then check the first frame against playback UI.",
+   "rule": "Center on x 50, keep words between about 22% and 65% of the height. Design for the grid and shelf, then check the first frame against playback UI.",
    "why": "Shorts thumbnails show on the homepage and channel tab, not in the Shorts feed, and cannot be A/B tested (PPC Land). Grids crop to 3:4 or square and add view counts.",
    "refs": [
     "ppcland-shorts-thumbs-2026",
@@ -196,8 +193,8 @@
    ]
   },
   {
-   "id": "r-players",
-   "question": "For multiplayer videos: does it show two or more players, or a live server, instead of a lone hero or a menu?",
+   "id": "r-in-use",
+   "question": "Does it show the result in use (the finished thing, people doing it) instead of a menu, a settings screen or a lone logo?",
    "weight": 3,
    "refs": [
     "sej-1of10-faces-2025",
@@ -225,17 +222,17 @@
    ]
   },
   {
-   "id": "r-game",
-   "question": "Is the game recognisable at a glance from a logo, character or place?",
+   "id": "r-subject",
+   "question": "Is the subject recognizable at a glance from a logo, product, character or place?",
    "weight": 2,
    "refs": [
     "ex-troublechute-palworld",
-    "ex-zanny-wukong"
+    "ex-highwaytrooper-fivem"
    ]
   },
   {
    "id": "r-separation",
-   "question": "Does the subject pop off a calm ground with one accent colour, and no red, white or black field?",
+   "question": "Does the subject stand clear of a calm ground with one accent color, and no red, white or black field?",
    "weight": 2,
    "refs": [
     "vidiq-2026-study",
@@ -328,7 +325,7 @@
    "notes": [
     "The cover is seen in grids and shelves (cropped, with view counts). Playback UI only covers the first frame, so those zones are soft.",
     "Shorts custom thumbnails show on the homepage and channel Shorts tab, not in the Shorts feed. No A/B testing for Shorts.",
-    "Safe rect x 192 to 888, y 420 to 1248 clears Shorts, TikTok and Reels playback UI and a centred square grid crop. Centre everything on x 50.",
+    "Safe rect x 192 to 888, y 420 to 1248 clears Shorts, TikTok and Reels playback UI and a centered square grid crop. Center everything on x 50.",
     "TikTok's action rail (x 780 to 960 from y 840) clips the lower right of the safe rect: keep that corner free of words.",
     "Judge at 130 px wide (profile grid). The TikTok grid crop (square vs 3:4) is disputed; the safe rect assumes the stricter square."
    ],
@@ -572,7 +569,7 @@
   "instagram": {
    "notes": [
     "The feed shows the full 4:5. Buffer says the grid previews posts at 4:5; 3:4 tiles would trim about 34 px per side (uncertain).",
-    "Some accounts still see the square grid: keep words inside the centre 1080x1080.",
+    "Some accounts still see the square grid: keep words inside the center 1080x1080.",
     "Reddit shows 4:5 images whole in most feeds (observed): the same layout works there.",
     "Judge at 130 px wide (profile grid)."
    ],
@@ -641,6 +638,52 @@
      "h": 130,
      "hard": true,
      "group": "Instagram"
+    }
+   ],
+   "refs": [
+    "buffer-ig-grid-2025"
+   ]
+  },
+  "square": {
+   "notes": [
+    "A square post shows whole in the feed. Judge at 130 px wide (profile grid).",
+    "Instagram's grid tiles are 3:4, so a square image can lose up to 135 px on each side there (derived from the tile ratio, unverified). The safe rect keeps words inside x 150 to 930."
+   ],
+   "limits": {
+    "wordsOk": 4,
+    "wordsWarn": 6,
+    "elementsOk": 3,
+    "elementsWarn": 4,
+    "capPxOk": 8,
+    "capPxWarn": 5,
+    "texturePx": 4
+   },
+   "safe": {
+    "x": 150,
+    "y": 80,
+    "w": 780,
+    "h": 920
+   },
+   "zones": [
+    {
+     "id": "sq-34-left",
+     "label": "3:4 grid tile side crop",
+     "x": 0,
+     "y": 0,
+     "w": 135,
+     "h": 1080,
+     "hard": false,
+     "group": "Grid crop"
+    },
+    {
+     "id": "sq-34-right",
+     "label": "3:4 grid tile side crop",
+     "x": 945,
+     "y": 0,
+     "w": 135,
+     "h": 1080,
+     "hard": false,
+     "group": "Grid crop"
     }
    ],
    "refs": [
@@ -724,66 +767,58 @@
  },
  "copy": {
   "do": [
-   "Name the outcome: YOUR OWN SERVER, PLAY TOGETHER, FREE, IN 5 MIN.",
-   "Use true numbers: player counts, minutes, 4 VS 1, P1 and P2.",
-   "Let the picture name the game so the words can do something else.",
-   "Accent one word, the promise (FREE, 5 MIN, TOGETHER, ONLINE).",
-   "Keep the title for search words: OB:MP, Oblivion Remastered, Windows, dedicated server.",
-   "Fira caps for punch; Petrock title case only for short, atmospheric lines."
+   "Name the outcome: FREE, IN 5 MIN, DONE, YOUR OWN [THING].",
+   "Use true numbers: counts, minutes, prices, 4 VS 1.",
+   "Let the picture name the subject so the words can do something else.",
+   "Accent one word, the promise (FREE, 5 MIN, DONE).",
+   "Keep the title for search words: product, task, platform, version.",
+   "Take fonts, colors and the logo from the brand kit in /thumbs/brand.json."
   ],
   "dont": [
    "Repeat the title word for word.",
    "Lead with process words (INSTALLING, CONFIGURING, PART 1). A small GUIDE label is fine.",
    "Bullet lists, sentences or more than 6 words.",
-   "Version numbers, .NET, ports, file names or menus: they belong in the video.",
-   "Claims the video does not show early (times, prices, player counts).",
-   "A year as the main idea. A small 2026 tag is fine on evergreen tutorials.",
+   "Version numbers, part numbers, file names or menus: they belong in the video.",
+   "Claims the video does not show early (times, prices, counts).",
+   "A year as the main idea. A small year tag is fine on evergreen tutorials.",
    "Filler like ultimate, insane, revolutionary, game-changing."
   ],
   "patterns": [
    {
     "pattern": "YOUR OWN [THING]",
-    "use": "Hosting tutorials: YOUR OWN SERVER, YOUR OWN CYRODIIL."
+    "use": "Tutorials where the viewer ends up owning or running the thing."
    },
    {
     "pattern": "[THING] IN [N] MIN",
-    "use": "Only when setup really is that short; time it in the video first."
+    "use": "Only when it really is that short; time it in the video first."
    },
    {
-    "pattern": "FREE [GAME] SERVER",
-    "use": "Self-hosting guides that need no paid host."
+    "pattern": "FREE [THING]",
+    "use": "Guides where the whole path costs nothing."
    },
    {
-    "pattern": "[N] PLAYERS or [N] VS [N]",
-    "use": "Events, PvP and community moments, with the real number from the session."
+    "pattern": "[N] PEOPLE or [N] VS [N]",
+    "use": "Events, contests and group moments, with the real number from the session."
    },
    {
-    "pattern": "P1 / P2 tags, no headline",
-    "use": "First-look multiplayer videos where the picture is the hook."
+    "pattern": "A / B tags, no headline",
+    "use": "Two people or two options in one frame, where the picture is the hook."
    },
    {
-    "pattern": "[GAME], NOT ALONE or WITH FRIENDS",
-    "use": "Showcases for people who only know the single-player game."
-   },
-   {
-    "pattern": "INVITE YOUR FRIENDS + live server card",
-    "use": "End-state proof for hosting videos: show the server online with real numbers."
-   },
-   {
-    "pattern": "I WISH I KNEW...",
-    "use": "Tips and mistakes videos, next to one strong action shot."
+    "pattern": "[RESULT] + info card",
+    "use": "End-state proof: the finished result with real names and numbers on the card."
    }
   ]
  },
  "recipes": [
   {
    "id": "promise-anchor",
-   "name": "Promise + game anchor",
+   "name": "Promise + subject anchor",
    "platforms": [
     "youtube"
    ],
-   "when": "Hosting and setup tutorials. Use FREE or a time only if true.",
-   "why": "The pattern behind the 20x+ server guides: game art or logo as anchor, one outcome phrase, one accent word.",
+   "when": "Tutorials and how-to videos. The subject sits on the right of the background, the promise on the left. Use FREE or a time only if true.",
+   "why": "The pattern behind the 20x+ server guides in the observed examples: the subject's art or logo as anchor, one outcome phrase, one accent word.",
    "refs": [
     "ex-allthingshosting-valheim",
     "ex-troublechute-palworld",
@@ -791,7 +826,6 @@
     "eden-507k-2026"
    ],
    "background": {
-    "src": "tower",
     "focusX": 68,
     "focusY": 40,
     "zoom": 1.15,
@@ -816,9 +850,8 @@
        "y": 0,
        "anchor": "tl",
        "w": 52,
-       "text": "Your own|server",
-       "accent": "server",
-       "font": "fira",
+       "text": "{title}",
+       "accent": "{accent}",
        "treatment": "shadow",
        "size": 170
       },
@@ -828,7 +861,7 @@
        "y": 0,
        "anchor": "tl",
        "w": 20,
-       "text": "FREE",
+       "text": "{badge}",
        "size": 56
       }
      ]
@@ -844,20 +877,19 @@
    ]
   },
   {
-   "id": "coop-duo",
-   "name": "P1 / P2 together",
+   "id": "tagged-pair",
+   "name": "Two together, tagged",
    "platforms": [
     "youtube"
    ],
-   "when": "Multiplayer first looks and feature showcases. Swap the background for a footage frame (media id) with two players side by side; put a tag over each head.",
-   "why": "DunderHeads' P1/P2 helmets (6.4x) and Goldie's tagged pets prove co-op without a word; multiple people beat one.",
+   "when": "Videos about doing something together, or about two options side by side. The background is a footage frame (media id) with both subjects in it; put a tag over each.",
+   "why": "P1/P2 tags (6.4x) and name-tagged pets show 'together' without a headline (observed, one niche); multiple people beat one (measured, second hand).",
    "refs": [
     "ex-dunderheads-howto",
     "ex-goldie-skyrim",
     "sej-1of10-faces-2025"
    ],
    "background": {
-    "src": "bridge",
     "focusX": 50,
     "focusY": 45,
     "zoom": 1.3,
@@ -873,7 +905,7 @@
      "y": 24,
      "anchor": "bc",
      "w": 8,
-     "text": "P1",
+     "text": "A",
      "size": 64
     },
     {
@@ -882,7 +914,7 @@
      "y": 24,
      "anchor": "bc",
      "w": 8,
-     "text": "P2",
+     "text": "B",
      "size": 64
     },
     {
@@ -901,15 +933,13 @@
    "platforms": [
     "youtube"
    ],
-   "when": "Events, PvP and community nights with a real, impressive count (40 PLAYERS, 4 VS 1).",
-   "why": "Spiffing's 4 VS 1 (7.6M views, 4.5x) and SKYRIM HUNGER GAMES sell scale in one read.",
+   "when": "Events, contests and group moments with a real, impressive count (40 PEOPLE, 4 VS 1). Accent the number.",
+   "why": "A huge 4 VS 1 (7.6M views, 4.5x) and a crowd of avatars under a three-word label sell scale in one read (observed, one niche).",
    "refs": [
     "ex-spiffing-hunted",
-    "ex-spiffing-vs11",
-    "ex-vress-20things"
+    "ex-spiffing-vs11"
    ],
    "background": {
-    "src": "keyart",
     "focusX": 50,
     "focusY": 58,
     "zoom": 1.2,
@@ -925,9 +955,8 @@
      "y": 8,
      "anchor": "tc",
      "w": 70,
-     "text": "40|players",
-     "accent": "40",
-     "font": "fira",
+     "text": "{title}",
+     "accent": "{accent}",
      "treatment": "outline",
      "size": 230
     },
@@ -942,20 +971,19 @@
    ]
   },
   {
-   "id": "live-server",
-   "name": "Server is live",
+   "id": "end-state",
+   "name": "The end state",
    "platforms": [
     "youtube"
    ],
-   "when": "Hosting tutorials and server launches: show the end state the viewer wants. Use the real server name and player count from the video.",
-   "why": "Outcome over process: the FULL SERVER BY AI dashboard (32.7x) and FiveM logo-to-players diagrams show the result, not the steps.",
+   "when": "Tutorials and launches: show the finished result the viewer wants, with an info card (a short label, a title, a line of detail). Real names and numbers from the video only.",
+   "why": "Outcome over process: a prompt, one arrow and the finished dashboard (32.7x), and a logo-to-result diagram, show the result and not the steps (observed, one niche).",
    "refs": [
     "ex-highwaytrooper-claude",
     "ex-guiderealm-fivem",
     "yt-ab-test-help"
    ],
    "background": {
-    "src": "keyart",
     "focusX": 30,
     "focusY": 45,
     "zoom": 1.1,
@@ -971,9 +999,8 @@
      "y": 32,
      "anchor": "cl",
      "w": 48,
-     "text": "Invite your|friends",
-     "accent": "friends",
-     "font": "fira",
+     "text": "{title}",
+     "accent": "{accent}",
      "treatment": "shadow",
      "size": 150
     },
@@ -982,12 +1009,7 @@
      "x": 92,
      "y": 40,
      "anchor": "cr",
-     "w": 38,
-     "status": "ONLINE",
-     "statusColor": "success",
-     "server": "CyrodiilRP",
-     "players": "25/128",
-     "playersLabel": "players"
+     "w": 38
     },
     {
      "type": "logo",
@@ -1005,16 +1027,14 @@
    "platforms": [
     "youtube"
    ],
-   "when": "Community moments and funny clips where one frame tells the story. Background must be a footage frame (media id); the default is only a placeholder.",
-   "why": "penguinz0's single NPC face and DunderHeads' fleeing party need no text; 1of10 reports zero-text gaming outliers.",
+   "when": "Moments and funny clips where one frame tells the story. The background must be a footage frame (media id).",
+   "why": "Three characters fleeing together need no text (observed); 1of10 reports gaming outliers with no text at all (vendor).",
    "refs": [
-    "ex-penguinz0-real",
     "ex-dunderheads-fantastic",
     "oneof10-trends-2026",
     "vidiq-2026-study"
    ],
    "background": {
-    "src": "rumare",
     "focusX": 50,
     "focusY": 45,
     "zoom": 1.4,
@@ -1035,20 +1055,19 @@
    ]
   },
   {
-   "id": "solo-to-crowd",
-   "name": "Solo to together",
+   "id": "before-after",
+   "name": "Before to after",
    "platforms": [
     "youtube"
    ],
-   "when": "Mod showcases and 'what multiplayer adds' videos. Left image: a lone player frame. Right image: a busy multiplayer frame. Both from footage.",
-   "why": "Before/after with one arrow is the FiveM beginner-guide pattern (4.4x) and the AI server video (32.7x).",
+   "when": "Videos about a change. Left image: the before frame. Right image: the after frame. Set both to footage frames (media ids).",
+   "why": "Before and after with one arrow: a beginner guide at 4.4x and a prompt-to-dashboard video at 32.7x (observed, one niche).",
    "refs": [
     "ex-kingfancy-gtarp",
     "ex-highwaytrooper-claude",
     "eden-507k-2026"
    ],
    "background": {
-    "src": "wallpaper",
     "focusX": 50,
     "focusY": 50,
     "zoom": 1,
@@ -1064,7 +1083,6 @@
      "y": 42,
      "anchor": "c",
      "w": 40,
-     "src": "rumare",
      "fit": "cover",
      "border": true,
      "shadow": true
@@ -1075,7 +1093,6 @@
      "y": 42,
      "anchor": "c",
      "w": 40,
-     "src": "bridge",
      "fit": "cover",
      "border": true,
      "shadow": true
@@ -1086,19 +1103,18 @@
      "y": 42,
      "anchor": "c",
      "w": 9,
-     "rotate": 0,
-     "color": "#ff8a1f"
+     "rotate": 0
     }
    ]
   },
   {
    "id": "vertical-poster",
-   "name": "Centred poster stack",
+   "name": "Centered poster stack",
    "platforms": [
     "vertical"
    ],
    "when": "Any vertical cover: Shorts, TikTok, Reels. Adapt the YouTube winner's idea, do not shrink its layout.",
-   "why": "Grids crop the top and bottom and add counts; playback UI eats the sides and bottom. A centred stack from 22% down survives all of them.",
+   "why": "Grids crop the top and bottom and add counts; playback UI eats the sides and bottom. A centered stack from 22% down survives all of them.",
    "refs": [
     "google-vertical-safe-zone",
     "tiktok-infeed-safe-zone",
@@ -1107,7 +1123,6 @@
     "designsensory-safe-zones"
    ],
    "background": {
-    "src": "tower",
     "focusX": 50,
     "focusY": 40,
     "zoom": 1.3,
@@ -1140,9 +1155,8 @@
        "y": 0,
        "anchor": "tc",
        "w": 64,
-       "text": "Your own|Oblivion|server",
-       "accent": "server",
-       "font": "fira",
+       "text": "{title}",
+       "accent": "{accent}",
        "treatment": "shadow",
        "size": 120
       },
@@ -1152,7 +1166,7 @@
        "y": 0,
        "anchor": "tc",
        "w": 50,
-       "text": "PLAY TOGETHER",
+       "text": "{badge}",
        "size": 46
       }
      ]
@@ -1165,14 +1179,13 @@
    "platforms": [
     "instagram"
    ],
-   "when": "Instagram and Reddit image posts announcing a server, event or tutorial.",
+   "when": "Instagram and Reddit image posts announcing a launch, an event or a tutorial.",
    "why": "4:5 gets the most feed height; the square-grid fallback means words stay in the middle 1080x1080.",
    "refs": [
     "buffer-ig-grid-2025",
     "ex-highwaytrooper-claude"
    ],
    "background": {
-    "src": "keyart",
     "focusX": 50,
     "focusY": 40,
     "zoom": 1.2,
@@ -1197,9 +1210,8 @@
        "y": 0,
        "anchor": "tc",
        "w": 80,
-       "text": "Invite your|friends",
-       "accent": "friends",
-       "font": "fira",
+       "text": "{title}",
+       "accent": "{accent}",
        "treatment": "shadow",
        "size": 110
       },
@@ -1208,12 +1220,7 @@
        "x": 0,
        "y": 0,
        "anchor": "tc",
-       "w": 70,
-       "status": "ONLINE",
-       "statusColor": "success",
-       "server": "CyrodiilRP",
-       "players": "25/128",
-       "playersLabel": "players"
+       "w": 70
       }
      ]
     },
@@ -1233,14 +1240,12 @@
    "platforms": [
     "x"
    ],
-   "when": "X and Reddit posts, and link cards for docs or Steam pages.",
+   "when": "X and Reddit posts, and link cards for docs or store pages. The small line under the headline says what the thing is, in full.",
    "why": "X shows link cards with no headline, so the image must carry the message; the domain label covers the bottom left.",
    "refs": [
-    "techcrunch-x-link-cards-2023",
-    "ex-gameranx-beforeyoubuy"
+    "techcrunch-x-link-cards-2023"
    ],
    "background": {
-    "src": "keyart",
     "focusX": 65,
     "focusY": 45,
     "zoom": 1.1,
@@ -1265,9 +1270,8 @@
        "y": 0,
        "anchor": "tl",
        "w": 50,
-       "text": "Play Oblivion|together",
-       "accent": "together",
-       "font": "petrock",
+       "text": "{title}",
+       "accent": "{accent}",
        "treatment": "shadow",
        "size": 120
       },
@@ -1277,8 +1281,7 @@
        "y": 0,
        "anchor": "tl",
        "w": 50,
-       "text": "OB:MP for Oblivion Remastered",
-       "font": "fira",
+       "text": "{eyebrow}",
        "weight": 600,
        "size": 40,
        "upper": true,
@@ -1298,164 +1301,6 @@
   }
  ],
  "examples": [
-  {
-   "id": "ex-vress-20things",
-   "title": "20 Essential Things You Should Do First in Oblivion Remastered",
-   "url": "https://www.youtube.com/watch?v=dn1LIKycook",
-   "thumb": "https://i.ytimg.com/vi/dn1LIKycook/hqdefault.jpg",
-   "channel": "Vress Games",
-   "views": 604072,
-   "outlier": 4.8,
-   "platform": "youtube",
-   "takeaways": [
-    "Imperative headline (DO THESE 20 THINGS FIRST) on one side, character on the other.",
-    "A number makes the payoff concrete."
-   ]
-  },
-  {
-   "id": "ex-spiffing-newgod",
-   "title": "Oblivion Remastered is A PERFECTLY BALANCED GAME WITH NO EXPLOITS - Making A New God",
-   "url": "https://www.youtube.com/watch?v=Pa-SVe0nrMk",
-   "thumb": "https://i.ytimg.com/vi/Pa-SVe0nrMk/hqdefault.jpg",
-   "channel": "The Spiffing Brit",
-   "views": 6030210,
-   "outlier": 3.5,
-   "platform": "youtube",
-   "takeaways": [
-    "Flat colour field, one character, a recurring series wordmark.",
-    "Two-word label (NEW GOD) carries the twist."
-   ]
-  },
-  {
-   "id": "ex-spiffing-infinite",
-   "title": "OBLIVION REMASTERED IS A PERFECTLY BALANCED GAME - Infinite Stats Is 100% Developer Approved",
-   "url": "https://www.youtube.com/watch?v=EgUStQLgIYs",
-   "thumb": "https://i.ytimg.com/vi/EgUStQLgIYs/hqdefault.jpg",
-   "channel": "The Spiffing Brit",
-   "views": 1831333,
-   "outlier": 1.1,
-   "platform": "youtube",
-   "takeaways": [
-    "Three faces plus fire: busier, and it lands at the channel's usual level."
-   ]
-  },
-  {
-   "id": "ex-penguinz0-real",
-   "title": "Can't Believe Oblivion Remastered is Real",
-   "url": "https://www.youtube.com/watch?v=h7IMqWXgbJg",
-   "thumb": "https://i.ytimg.com/vi/h7IMqWXgbJg/hqdefault.jpg",
-   "channel": "penguinz0",
-   "views": 2180952,
-   "outlier": 1.0,
-   "platform": "youtube",
-   "takeaways": [
-    "No text, one funny NPC face filling the frame: the moment is the hook."
-   ]
-  },
-  {
-   "id": "ex-nerbit-fists",
-   "title": "Can You Beat Oblivion: Remastered With Only Your Fists?",
-   "url": "https://www.youtube.com/watch?v=tNzykKNeEsQ",
-   "thumb": "https://i.ytimg.com/vi/tNzykKNeEsQ/hqdefault.jpg",
-   "channel": "Nerbit",
-   "views": 916929,
-   "outlier": 2.5,
-   "platform": "youtube",
-   "takeaways": [
-    "Illustrated, game logo as anchor, one short question in gold serif."
-   ]
-  },
-  {
-   "id": "ex-tizzy-100days",
-   "title": "I Spent 100 Days In Oblivion Remastered Becoming A Stealth Archer (Oblivion Movie)",
-   "url": "https://www.youtube.com/watch?v=vB5yexIlf38",
-   "thumb": "https://i.ytimg.com/vi/vB5yexIlf38/hqdefault.jpg",
-   "channel": "Tizzy",
-   "views": 306190,
-   "outlier": 1.1,
-   "platform": "youtube",
-   "takeaways": [
-    "DAY 1 vs DAY 100 split: a familiar format, average result."
-   ]
-  },
-  {
-   "id": "ex-antikleaper-drugs",
-   "title": "I Ruined Oblivion Remastered with Drugs",
-   "url": "https://www.youtube.com/watch?v=jdQQbgzsKTE",
-   "thumb": "https://i.ytimg.com/vi/jdQQbgzsKTE/hqdefault.jpg",
-   "channel": "Anti-Kleaper",
-   "views": 1716810,
-   "outlier": 2.3,
-   "platform": "youtube",
-   "takeaways": [
-    "Uses the game's own UI line (You are now addicted) as the text: in-world copy reads as authentic."
-   ]
-  },
-  {
-   "id": "ex-generalsam-thief",
-   "title": "THIEF GUY 2 (Oblivion Remastered)",
-   "url": "https://www.youtube.com/watch?v=XQ7RGFwzNhU",
-   "thumb": "https://i.ytimg.com/vi/XQ7RGFwzNhU/hqdefault.jpg",
-   "channel": "General Sam",
-   "views": 1336656,
-   "outlier": 1.7,
-   "platform": "youtube",
-   "takeaways": [
-    "In-game scene plus a cream serif title: story framing, no shouting."
-   ]
-  },
-  {
-   "id": "ex-toasty-faithful",
-   "title": "The Oblivion Remaster Isn't Faithful. You Just Can't Tell.",
-   "url": "https://www.youtube.com/watch?v=EQwpxOdd7Ts",
-   "thumb": "https://i.ytimg.com/vi/EQwpxOdd7Ts/hqdefault.jpg",
-   "channel": "Toasty Gaming",
-   "views": 17885,
-   "outlier": 0.4,
-   "platform": "youtube",
-   "takeaways": [
-    "Quote text that needs context to make sense; weak at small size."
-   ]
-  },
-  {
-   "id": "ex-upisnotjump-nightmare",
-   "title": "Oblivion Remastered Is An Absolute Nightmare - This Is Why",
-   "url": "https://www.youtube.com/watch?v=6hhQk_Ri7Co",
-   "thumb": "https://i.ytimg.com/vi/6hhQk_Ri7Co/hqdefault.jpg",
-   "channel": "UpIsNotJump",
-   "views": 869735,
-   "outlier": 1.1,
-   "platform": "youtube",
-   "takeaways": [
-    "Long sentence repeating the title: works only on the creator's brand."
-   ]
-  },
-  {
-   "id": "ex-juicehead-15features",
-   "title": "15 Secret Features Oblivion Remastered Never Tells You About",
-   "url": "https://www.youtube.com/watch?v=DeHtNIKQC-Y",
-   "thumb": "https://i.ytimg.com/vi/DeHtNIKQC-Y/hqdefault.jpg",
-   "channel": "JuiceHead",
-   "views": 888650,
-   "outlier": 4.1,
-   "platform": "youtube",
-   "takeaways": [
-    "Logo, character and Oblivion gate anchor the game; one black bar with a number promise."
-   ]
-  },
-  {
-   "id": "ex-gameranx-beforeyoubuy",
-   "title": "Elder Scrolls Oblivion Remastered - Before You Buy",
-   "url": "https://www.youtube.com/watch?v=r3nG5qSRw64",
-   "thumb": "https://i.ytimg.com/vi/r3nG5qSRw64/hqdefault.jpg",
-   "channel": "gameranx",
-   "views": 2790125,
-   "outlier": 3.9,
-   "platform": "youtube",
-   "takeaways": [
-    "Clean character render on white with a grey series label: a recognisable series frame."
-   ]
-  },
   {
    "id": "ex-dunderheads-howto",
    "title": "How To Play Skyrim Multiplayer! (Skyrim Together)",
@@ -1560,7 +1405,7 @@
    "outlier": 23.4,
    "platform": "youtube",
    "takeaways": [
-    "Framed card with Steam and Palworld logos, DEDICATED SERVER in an accent colour, STEAM GUIDE label.",
+    "Framed card with Steam and Palworld logos, DEDICATED SERVER in an accent color, STEAM GUIDE label.",
     "Same frame as the channel's other server guides."
    ]
   },
@@ -1631,32 +1476,6 @@
    ]
   },
   {
-   "id": "ex-mratomicduck-zomboid",
-   "title": "How To Host Multiplayer Servers For Project Zomboid - A Guide To Dedicated Servers & More!",
-   "url": "https://www.youtube.com/watch?v=-12EW8vxwLA",
-   "thumb": "https://i.ytimg.com/vi/-12EW8vxwLA/hqdefault.jpg",
-   "channel": "MrAtomicDuck",
-   "views": 207611,
-   "outlier": 2.2,
-   "platform": "youtube",
-   "takeaways": [
-    "Mascot at a laptop plus SERVER SETUP GUIDE: channel character as the face."
-   ]
-  },
-  {
-   "id": "ex-hardwarehaven-anygame",
-   "title": "Hosting Your Game Servers is EASY with This",
-   "url": "https://www.youtube.com/watch?v=Zda-nIrvyGQ",
-   "thumb": "https://i.ytimg.com/vi/Zda-nIrvyGQ/hqdefault.jpg",
-   "channel": "Hardware Haven",
-   "views": 666871,
-   "outlier": 2.0,
-   "platform": "youtube",
-   "takeaways": [
-    "'run any game server' with ANY accented, a wall of game logos and the hardware: breadth as the hook."
-   ]
-  },
-  {
    "id": "ex-viralkingdom-avoid",
    "title": "Why You SHOULDN'T Host Your Own Dedicated Server in Palworld",
    "url": "https://www.youtube.com/watch?v=v-Z_k5Xv-PU",
@@ -1722,71 +1541,6 @@
     "FiveM logo, arrow, players icon: 'make a server, get players' as a diagram.",
     "Big channel with a tiny recent median: ratio is unreliable."
    ]
-  },
-  {
-   "id": "ex-asmongold-wukong",
-   "title": "Black Myth Wukong's Ending Changed My Life",
-   "url": "https://www.youtube.com/watch?v=d1hUDjMxLZg",
-   "thumb": "https://i.ytimg.com/vi/d1hUDjMxLZg/hqdefault.jpg",
-   "channel": "Asmongold TV",
-   "views": 1618768,
-   "outlier": 1.3,
-   "platform": "youtube",
-   "takeaways": [
-    "Creator reaction face next to the Destined One's glowing eyes: works on creator brand."
-   ]
-  },
-  {
-   "id": "ex-zanny-wukong",
-   "title": "Babe wake up, Black Myth: Wukong is peak",
-   "url": "https://www.youtube.com/watch?v=H31RI_qlL3w",
-   "thumb": "https://i.ytimg.com/vi/H31RI_qlL3w/hqdefault.jpg",
-   "channel": "zanny",
-   "views": 2565026,
-   "outlier": 2.2,
-   "platform": "youtube",
-   "takeaways": [
-    "Hero render plus the game logo, no other text: the game is the hook."
-   ]
-  },
-  {
-   "id": "ex-cupppajoe-wukong",
-   "title": "I Finally Tried Black Myth Wukong BLIND.. It Took YEARS off my life",
-   "url": "https://www.youtube.com/watch?v=3FTLVAHma5o",
-   "thumb": "https://i.ytimg.com/vi/3FTLVAHma5o/hqdefault.jpg",
-   "channel": "CupppaJoe+",
-   "views": 61746,
-   "outlier": 0.3,
-   "platform": "youtube",
-   "takeaways": [
-    "Scenic back shot with a big 2026: the year says nothing about the video."
-   ]
-  },
-  {
-   "id": "ex-arktix-wukong",
-   "title": "ESSENTIAL Tips I Wish I Knew Sooner - Black Myth Wukong",
-   "url": "https://www.youtube.com/watch?v=YKjYAsWsNvw",
-   "thumb": "https://i.ytimg.com/vi/YKjYAsWsNvw/hqdefault.jpg",
-   "channel": "Arktix",
-   "views": 1320174,
-   "outlier": 19.6,
-   "platform": "youtube",
-   "takeaways": [
-    "Handwritten I WISH I KNEW... beside a fiery action pose; strong subject, two colour text."
-   ]
-  },
-  {
-   "id": "ex-optimistichuman-wukong",
-   "title": "Black Myth Wukong Platinum is harder than every Dark Souls game",
-   "url": "https://www.youtube.com/watch?v=HtzHN9fB-Bo",
-   "thumb": "https://i.ytimg.com/vi/HtzHN9fB-Bo/hqdefault.jpg",
-   "channel": "Optimistic Human",
-   "views": 1162067,
-   "outlier": 5.7,
-   "platform": "youtube",
-   "takeaways": [
-    "Destined One holding the platinum trophy next to the creator's deadpan face, no text."
-   ]
   }
  ],
  "references": [
@@ -1804,7 +1558,7 @@
    "url": "https://eden.so/blog/what-makes-a-good-youtube-thumbnail/",
    "kind": "study",
    "year": 2026,
-   "note": "Measured. 2,960 thumbnails, breakout (2x+ channel baseline) vs underperformer, Aug 2025 to Aug 2026. Faces 84.2% vs 82.2% (noise). 4 to 6 words 30.6% vs 26.5% (largest gap); 7+ words 29.6% vs 31.1%. Text repeating the title verbatim 6.3% vs 6.8%. Brightness, contrast, saturation, warm share: no difference. Drawn arrows/circles 41.8% vs 38.1%. Observational, no gaming split. Author in page metadata not verified."
+   "note": "Measured. 2,960 thumbnails, breakout (2x+ channel baseline) vs underperformer, Aug 2025 to Aug 2026. Faces 84.2% vs 82.2% (noise). 4 to 6 words 30.6% vs 26.5% (largest gap); 7+ words 29.6% vs 31.1%. Text repeating the title verbatim 6.3% vs 6.8%. Brightness, contrast, saturation, warm share: no difference. Drawn arrows/circles 41.8% vs 38.1%. Observational, no split by niche. Author in page metadata not verified."
   },
   {
    "id": "sej-1of10-faces-2025",
@@ -1812,7 +1566,7 @@
    "url": "https://www.searchenginejournal.com/do-faces-help-youtube-thumbnails-heres-what-the-data-says/563944/",
    "kind": "article",
    "year": 2025,
-   "note": "Measured (second hand). 1of10 analysis of 300K+ viral 2025 videos using outlier score (views / channel median). Faces and no faces perform similarly overall, vary by niche; multiple faces beat a single face; a face helped only above an unstated channel size. No gaming numbers reported."
+   "note": "Measured (second hand). 1of10 analysis of 300K+ viral 2025 videos using outlier score (views / channel median). Faces and no faces perform similarly overall, vary by niche; multiple faces beat a single face; a face helped only above an unstated channel size."
   },
   {
    "id": "oneof10-trends-2026",
@@ -1820,7 +1574,7 @@
    "url": "https://1of10.com/blog/youtube-thumbnail-trends-2026/",
    "kind": "creator",
    "year": 2026,
-   "note": "Vendor opinion with few numbers. Judges thumbnails at about 120 px wide, says winning palettes use about 3 colours and that gaming outliers often carry no text. No sample sizes: treat as observed, not measured."
+   "note": "Vendor opinion with few numbers. Judges thumbnails at about 120 px wide, says winning palettes use about 3 colors and that gaming outliers often carry no text. No sample sizes: treat as observed, not measured."
   },
   {
    "id": "yt-ab-test-help",
@@ -1868,7 +1622,7 @@
    "url": "https://www.colinandsamir.com/resources/the-new-rules-of-youtube-from-paddy-galloway",
    "kind": "creator",
    "year": 2024,
-   "note": "Packaging first: the idea and its title/thumbnail decide the video. Seen in search results only; no gaming CTR numbers found from Galloway. Year uncertain."
+   "note": "Packaging first: the idea and its title/thumbnail decide the video. Seen in search results only, no numbers. Year uncertain."
   },
   {
    "id": "etra-2018-eyetracking",
@@ -1924,7 +1678,7 @@
    "url": "https://buffer.com/resources/instagram-grid/",
    "kind": "article",
    "year": 2025,
-   "note": "Feb 2025: posts preview at 1080x1350 (4:5), Reels at 1080x1440 (3:4) in the grid; some users still see the square grid, so keep key elements in the centre 1080x1080."
+   "note": "Feb 2025: posts preview at 1080x1350 (4:5), Reels at 1080x1440 (3:4) in the grid; some users still see the square grid, so keep key elements in the center 1080x1080."
   },
   {
    "id": "designsensory-safe-zones",
@@ -1932,7 +1686,7 @@
    "url": "https://designsensory.com/insights/social-media-safe-zone/",
    "kind": "article",
    "year": 2025,
-   "note": "Seen in results while checking the TikTok profile grid crop. Sources disagree (centred 1:1 vs about 3:4) and one suggests keeping key elements between about 22% and 75% of the height. Which page said what was not verified; treat the TikTok grid crop as uncertain."
+   "note": "Seen in results while checking the TikTok profile grid crop. Sources disagree (centered 1:1 vs about 3:4) and one suggests keeping key elements between about 22% and 75% of the height. Which page said what was not verified; treat the TikTok grid crop as uncertain."
   },
   {
    "id": "techcrunch-x-link-cards-2023",
@@ -1941,90 +1695,6 @@
    "kind": "article",
    "year": 2023,
    "note": "Link cards on X show only the image with a small domain label bottom left; no headline. Position of the label in px is observed, not documented."
-  },
-  {
-   "id": "ex-vress-20things",
-   "title": "20 Essential Things You Should Do First in Oblivion Remastered (Vress Games)",
-   "url": "https://www.youtube.com/watch?v=dn1LIKycook",
-   "kind": "example",
-   "note": "604,072 views, about 4.8x channel median (fetched 2026-11-08). Imperative headline (DO THESE 20 THINGS FIRST) on one side, character on the other. A number makes the payoff concrete."
-  },
-  {
-   "id": "ex-spiffing-newgod",
-   "title": "Oblivion Remastered is A PERFECTLY BALANCED GAME WITH NO EXPLOITS - Making A New God (The Spiffing Brit)",
-   "url": "https://www.youtube.com/watch?v=Pa-SVe0nrMk",
-   "kind": "example",
-   "note": "6,030,210 views, about 3.5x channel median (fetched 2026-11-08). Flat colour field, one character, a recurring series wordmark. Two-word label (NEW GOD) carries the twist."
-  },
-  {
-   "id": "ex-spiffing-infinite",
-   "title": "OBLIVION REMASTERED IS A PERFECTLY BALANCED GAME - Infinite Stats Is 100% Developer Approved (The Spiffing Brit)",
-   "url": "https://www.youtube.com/watch?v=EgUStQLgIYs",
-   "kind": "example",
-   "note": "1,831,333 views, about 1.1x channel median (fetched 2026-11-08). Three faces plus fire: busier, and it lands at the channel's usual level."
-  },
-  {
-   "id": "ex-penguinz0-real",
-   "title": "Can't Believe Oblivion Remastered is Real (penguinz0)",
-   "url": "https://www.youtube.com/watch?v=h7IMqWXgbJg",
-   "kind": "example",
-   "note": "2,180,952 views, about 1.0x channel median (fetched 2026-11-08). No text, one funny NPC face filling the frame: the moment is the hook."
-  },
-  {
-   "id": "ex-nerbit-fists",
-   "title": "Can You Beat Oblivion: Remastered With Only Your Fists? (Nerbit)",
-   "url": "https://www.youtube.com/watch?v=tNzykKNeEsQ",
-   "kind": "example",
-   "note": "916,929 views, about 2.5x channel median (fetched 2026-11-08). Illustrated, game logo as anchor, one short question in gold serif."
-  },
-  {
-   "id": "ex-tizzy-100days",
-   "title": "I Spent 100 Days In Oblivion Remastered Becoming A Stealth Archer (Oblivion Movie) (Tizzy)",
-   "url": "https://www.youtube.com/watch?v=vB5yexIlf38",
-   "kind": "example",
-   "note": "306,190 views, about 1.1x channel median (fetched 2026-11-08). DAY 1 vs DAY 100 split: a familiar format, average result."
-  },
-  {
-   "id": "ex-antikleaper-drugs",
-   "title": "I Ruined Oblivion Remastered with Drugs (Anti-Kleaper)",
-   "url": "https://www.youtube.com/watch?v=jdQQbgzsKTE",
-   "kind": "example",
-   "note": "1,716,810 views, about 2.3x channel median (fetched 2026-11-08). Uses the game's own UI line (You are now addicted) as the text: in-world copy reads as authentic."
-  },
-  {
-   "id": "ex-generalsam-thief",
-   "title": "THIEF GUY 2 (Oblivion Remastered) (General Sam)",
-   "url": "https://www.youtube.com/watch?v=XQ7RGFwzNhU",
-   "kind": "example",
-   "note": "1,336,656 views, about 1.7x channel median (fetched 2026-11-08). In-game scene plus a cream serif title: story framing, no shouting."
-  },
-  {
-   "id": "ex-toasty-faithful",
-   "title": "The Oblivion Remaster Isn't Faithful. You Just Can't Tell. (Toasty Gaming)",
-   "url": "https://www.youtube.com/watch?v=EQwpxOdd7Ts",
-   "kind": "example",
-   "note": "17,885 views, about 0.4x channel median (fetched 2026-11-08). Quote text that needs context to make sense; weak at small size."
-  },
-  {
-   "id": "ex-upisnotjump-nightmare",
-   "title": "Oblivion Remastered Is An Absolute Nightmare - This Is Why (UpIsNotJump)",
-   "url": "https://www.youtube.com/watch?v=6hhQk_Ri7Co",
-   "kind": "example",
-   "note": "869,735 views, about 1.1x channel median (fetched 2026-11-08). Long sentence repeating the title: works only on the creator's brand."
-  },
-  {
-   "id": "ex-juicehead-15features",
-   "title": "15 Secret Features Oblivion Remastered Never Tells You About (JuiceHead)",
-   "url": "https://www.youtube.com/watch?v=DeHtNIKQC-Y",
-   "kind": "example",
-   "note": "888,650 views, about 4.1x channel median (fetched 2026-11-08). Logo, character and Oblivion gate anchor the game; one black bar with a number promise."
-  },
-  {
-   "id": "ex-gameranx-beforeyoubuy",
-   "title": "Elder Scrolls Oblivion Remastered - Before You Buy (gameranx)",
-   "url": "https://www.youtube.com/watch?v=r3nG5qSRw64",
-   "kind": "example",
-   "note": "2,790,125 views, about 3.9x channel median (fetched 2026-11-08). Clean character render on white with a grey series label: a recognisable series frame."
   },
   {
    "id": "ex-dunderheads-howto",
@@ -2080,7 +1750,7 @@
    "title": "Palworld Steam Dedicated Server Setup | Host a FREE Private Server | Full Guide (TroubleChute)",
    "url": "https://www.youtube.com/watch?v=7Erzg2HcBHI",
    "kind": "example",
-   "note": "468,427 views, about 23.4x channel median (fetched 2026-11-08). Framed card with Steam and Palworld logos, DEDICATED SERVER in an accent colour, STEAM GUIDE label. Same frame as the channel's other server guides."
+   "note": "468,427 views, about 23.4x channel median (fetched 2026-11-08). Framed card with Steam and Palworld logos, DEDICATED SERVER in an accent color, STEAM GUIDE label. Same frame as the channel's other server guides."
   },
   {
    "id": "ex-xielent-palworld",
@@ -2118,20 +1788,6 @@
    "note": "3,527 views, about 0.6x channel median (fetched 2026-11-08). Hosting-brand UI mockup with four separate text blocks: too much to read at 168 px."
   },
   {
-   "id": "ex-mratomicduck-zomboid",
-   "title": "How To Host Multiplayer Servers For Project Zomboid - A Guide To Dedicated Servers & More! (MrAtomicDuck)",
-   "url": "https://www.youtube.com/watch?v=-12EW8vxwLA",
-   "kind": "example",
-   "note": "207,611 views, about 2.2x channel median (fetched 2026-11-08). Mascot at a laptop plus SERVER SETUP GUIDE: channel character as the face."
-  },
-  {
-   "id": "ex-hardwarehaven-anygame",
-   "title": "Hosting Your Game Servers is EASY with This (Hardware Haven)",
-   "url": "https://www.youtube.com/watch?v=Zda-nIrvyGQ",
-   "kind": "example",
-   "note": "666,871 views, about 2.0x channel median (fetched 2026-11-08). 'run any game server' with ANY accented, a wall of game logos and the hardware: breadth as the hook."
-  },
-  {
    "id": "ex-viralkingdom-avoid",
    "title": "Why You SHOULDN'T Host Your Own Dedicated Server in Palworld (Viral Kingdom)",
    "url": "https://www.youtube.com/watch?v=v-Z_k5Xv-PU",
@@ -2165,41 +1821,6 @@
    "url": "https://www.youtube.com/watch?v=OslaiuwtVSI",
    "kind": "example",
    "note": "95,559 views, about 86.9x channel median (fetched 2026-11-08). FiveM logo, arrow, players icon: 'make a server, get players' as a diagram. Big channel with a tiny recent median: ratio is unreliable."
-  },
-  {
-   "id": "ex-asmongold-wukong",
-   "title": "Black Myth Wukong's Ending Changed My Life (Asmongold TV)",
-   "url": "https://www.youtube.com/watch?v=d1hUDjMxLZg",
-   "kind": "example",
-   "note": "1,618,768 views, about 1.3x channel median (fetched 2026-11-08). Creator reaction face next to the Destined One's glowing eyes: works on creator brand."
-  },
-  {
-   "id": "ex-zanny-wukong",
-   "title": "Babe wake up, Black Myth: Wukong is peak (zanny)",
-   "url": "https://www.youtube.com/watch?v=H31RI_qlL3w",
-   "kind": "example",
-   "note": "2,565,026 views, about 2.2x channel median (fetched 2026-11-08). Hero render plus the game logo, no other text: the game is the hook."
-  },
-  {
-   "id": "ex-cupppajoe-wukong",
-   "title": "I Finally Tried Black Myth Wukong BLIND.. It Took YEARS off my life (CupppaJoe+)",
-   "url": "https://www.youtube.com/watch?v=3FTLVAHma5o",
-   "kind": "example",
-   "note": "61,746 views, about 0.3x channel median (fetched 2026-11-08). Scenic back shot with a big 2026: the year says nothing about the video."
-  },
-  {
-   "id": "ex-arktix-wukong",
-   "title": "ESSENTIAL Tips I Wish I Knew Sooner - Black Myth Wukong (Arktix)",
-   "url": "https://www.youtube.com/watch?v=YKjYAsWsNvw",
-   "kind": "example",
-   "note": "1,320,174 views, about 19.6x channel median (fetched 2026-11-08). Handwritten I WISH I KNEW... beside a fiery action pose; strong subject, two colour text."
-  },
-  {
-   "id": "ex-optimistichuman-wukong",
-   "title": "Black Myth Wukong Platinum is harder than every Dark Souls game (Optimistic Human)",
-   "url": "https://www.youtube.com/watch?v=HtzHN9fB-Bo",
-   "kind": "example",
-   "note": "1,162,067 views, about 5.7x channel median (fetched 2026-11-08). Destined One holding the platinum trophy next to the creator's deadpan face, no text."
   }
  ]
 }

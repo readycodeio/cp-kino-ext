@@ -1,5 +1,6 @@
 // OS-specific words, shortcuts and fonts for the panels. The panels run inside Kino on the same
 // machine as the bridge, so the browser's platform is the bridge's platform.
+// Shared by every panel: keep it free of anything that belongs to one panel or one project.
 const nav = typeof navigator === 'undefined' ? null : (navigator as Navigator & { userAgentData?: { platform?: string } })
 const PLATFORM = String(nav?.userAgentData?.platform || nav?.platform || nav?.userAgent || '')
 
@@ -25,12 +26,21 @@ export const MOD_ENTER = IS_MAC ? '⌘↩' : 'Ctrl+Enter'
 /** True when the platform's primary shortcut modifier is held (Cmd on macOS, Ctrl elsewhere). */
 export const modKey = (event: { metaKey: boolean; ctrlKey: boolean }) => (IS_MAC ? event.metaKey : event.ctrlKey)
 
-/** How to start the bridge. Shown when a panel cannot reach it. */
+// The bridge: one setup command installs it as a background service that starts with the computer.
+/** First-time setup, run in the folder the panels repo was cloned into. */
+export const SETUP_BRIDGE = 'npm run setup'
+export const SETUP_BRIDGE_HINT = IS_WIN
+	? 'In the folder you cloned the panels into, double-click setup.cmd, or run this in PowerShell:'
+	: IS_MAC
+		? 'In the folder you cloned the panels into, double-click setup.command, or run this in Terminal:'
+		: 'In the folder you cloned the panels into, run this in a terminal:'
+/** After pulling a newer version of the repo. */
+export const UPDATE_BRIDGE = 'git pull && npm run setup'
+export const UPDATE_BRIDGE_HINT = 'In the folder you cloned the panels into, run:'
+/** Run the bridge in the foreground instead (logs in the window, Ctrl+C stops it). */
 export const START_BRIDGE = 'npm start'
-export const START_BRIDGE_HINT = IS_WIN
-	? 'In the cp-kino-ext folder, run npm start in PowerShell, or double-click start.cmd.'
-	: 'In the cp-kino-ext folder, run npm start in a terminal, or double-click start.command.'
-/** Name of the app people usually start the bridge from. */
+export const START_BRIDGE_HINT = `${SETUP_BRIDGE_HINT.replace(/:$/, '')} ${SETUP_BRIDGE}.`
+/** Name of the app people run the commands in. */
 export const TERMINAL_APP = IS_MAC ? 'Terminal' : IS_WIN ? 'PowerShell' : 'a terminal'
 
 /** How to reach a copied path in the OS file picker. */

@@ -47,9 +47,29 @@ const documentsDir = () => {
 export const DOCUMENTS = documentsDir();
 export const PROJECTS_DIR = env("KINO_PROJECTS_DIR") || path.join(DOCUMENTS, "KinoProjects");
 
+// Where Kino desktop mounts project folders. Kino moved them from Documents/KinoProjects to
+// ~/.kino/Projects.nosync in November 2026; renders (Thumbnails, Publish) stay under PROJECTS_DIR.
+// An explicit KINO_PROJECTS_DIR still sets both, so older setups and the smoke test keep working.
+const KINO_MOUNTS = path.join(HOME, ".kino", "Projects.nosync");
+export const MOUNTS_DIR =
+  env("KINO_MOUNTS_DIR") || (env("KINO_PROJECTS_DIR") ? PROJECTS_DIR : fs.existsSync(KINO_MOUNTS) ? KINO_MOUNTS : PROJECTS_DIR);
+
 // ---------- child processes ----------
-// macOS: Homebrew first, so its current yt-dlp, deno and ffmpeg win over older copies.
-const POSIX_PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+// Where helper tools usually live, most specific first: Homebrew (so its current yt-dlp, deno and ffmpeg win
+// over older copies), per-user installs (pipx, deno, Linuxbrew, snap), then the system folders.
+const POSIX_DIRS = [
+  ...env("KINO_EXTRA_PATH").split(":").filter(Boolean),
+  "/opt/homebrew/bin",
+  "/usr/local/bin",
+  path.join(HOME, ".local", "bin"),
+  path.join(HOME, ".deno", "bin"),
+  "/home/linuxbrew/.linuxbrew/bin",
+  "/snap/bin",
+  "/usr/bin",
+  "/bin",
+  "/usr/sbin",
+  "/sbin",
+];
 // Windows needs these for networking, temp files and finding programs; none of them are secrets.
 const WIN_KEEP = [
   "SystemRoot", "SystemDrive", "windir", "ComSpec", "PATHEXT", "TEMP", "TMP", "USERPROFILE", "USERNAME", "USERDOMAIN",
@@ -64,12 +84,16 @@ export const childEnv = (extra = {}) => {
     for (const [key, value] of Object.entries(process.env)) {
       if (key.toUpperCase() === "PATH" || WIN_KEEP.some(name => name.toUpperCase() === key.toUpperCase())) out[key] = value;
     }
+    const extraPath = env("KINO_EXTRA_PATH");
+    if (extraPath) {
+      const key = Object.keys(out).find(name => name.toUpperCase() === "PATH") ?? "Path";
+      out[key] = `${extraPath};${out[key] ?? ""}`;
+    }
     return { ...out, ...extra };
   }
-  const extraPath = env("KINO_EXTRA_PATH");
   return {
     HOME,
-    PATH: extraPath ? `${extraPath}:${POSIX_PATH}` : POSIX_PATH,
+    PATH: POSIX_DIRS.join(":"),
     LANG: process.env.LANG ?? "en_US.UTF-8",
     TMPDIR: os.tmpdir(),
     ...extra,
@@ -79,7 +103,7 @@ export const childEnv = (extra = {}) => {
 /** Absolute path of a tool when we can find it, else the bare name for PATH lookup. */
 export const findBin = name => {
   if (IS_WIN) return name; // execFile resolves name.exe through PATH (winget adds a shim)
-  return [`/opt/homebrew/bin/${name}`, `/usr/local/bin/${name}`, `/usr/bin/${name}`].find(f => fs.existsSync(f)) ?? name;
+  return POSIX_DIRS.map(dir => path.join(dir, name)).find(file => fs.existsSync(file)) ?? name;
 };
 
 /** True when `target` is `root` or inside it. Case-insensitive on Windows. */
@@ -115,7 +139,10 @@ const PAIR_TEXT = name =>
   `A Kino panel wants to use the Kino bridge on ${THIS_MACHINE} as ${name}: terminal sessions, YouTube downloads, voiceover, thumbnails and publishing.\n\n` +
   "Allow only if you just clicked Connect in a Kino panel.";
 
-/** Native yes/no dialog that defaults to Deny and gives up after 60 seconds. Resolves true on Allow. */
+/**
+ * Native yes/no dialog that defaults to Deny and gives up after 60 seconds. Resolves true on Allow,
+ * false on Deny, and "no-dialog" when this desktop has no dialog tool to ask with.
+ */
 export const askToPair = username =>
   new Promise(resolve => {
     const name = String(username).replace(/["\\\r\n]/g, "");
@@ -144,11 +171,14 @@ export const askToPair = username =>
       );
       return;
     }
-    execFile(
-      "zenity",
-      ["--question", "--title=Kino bridge", `--text=${PAIR_TEXT(name)}`, "--ok-label=Allow", "--cancel-label=Deny", "--default-cancel", "--timeout=60"],
-      error => resolve(!error),
-    );
+    // Linux: zenity (GNOME and most desktops), then kdialog (KDE). Neither installed: say so, do not fail silently.
+    const text = PAIR_TEXT(name);
+    execFile("zenity", ["--question", "--title=Kino bridge", `--text=${text}`, "--ok-label=Allow", "--cancel-label=Deny", "--default-cancel", "--timeout=60"], error => {
+      if (error?.code !== "ENOENT") return resolve(!error);
+      execFile("kdialog", ["--title", "Kino bridge", "--warningyesno", text, "--yes-label", "Allow", "--no-label", "Deny"], { timeout: 60_000 }, error2 => {
+        resolve(error2?.code === "ENOENT" ? "no-dialog" : !error2);
+      });
+    });
   });
 
 // ---------- shells ----------
@@ -205,7 +235,6 @@ export const shellArgs = shell => {
   return ["-l"];
 };
 
-/** Signals that should stop the bridge cleanly on this OS. */
 // node-pty 1.1.0's macOS and Linux prebuilds ship spawn-helper without its exec bit, so every shell
 // fails with "posix_spawnp failed". Restore it (npm ci runs this as postinstall, the bridge again at start).
 export const ensurePtyHelper = () => {
@@ -238,4 +267,5 @@ export const ensurePtyHelper = () => {
   return fixed;
 };
 
+/** Signals that should stop the bridge cleanly on this OS. */
 export const STOP_SIGNALS = IS_WIN ? ["SIGINT", "SIGTERM", "SIGBREAK"] : ["SIGINT", "SIGTERM", "SIGHUP"];

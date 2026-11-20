@@ -1,62 +1,49 @@
-// Thumbnail art for the Thumbnails panel (/panels/thumbs), styled with the OB:MP kit.
+// Thumbnail art for the Thumbnails panel (/panels/thumbs), drawn with the project's brand kit (./ui/brand.ts).
 // Renders a v2 Design (see ./model.ts): a background plus freely placed elements.
 // Uses plain <img> with blob URLs: remotion's Img fails inside panels. Built with createElement like the panels.
 // Every element carries data-el (its id, for selection) and data-thumb (role). Elements the panel checks also carry
 // data-count (counts toward clutter) and data-fs/data-cap (rendered text size).
-import { createElement as h } from 'react'
+import { createElement as h, useEffect, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
-import { loadFont as loadFira } from '@remotion/google-fonts/FiraSans'
-import { c } from './palette'
-import { CenterRule, Emblem } from './ui/ornaments'
-import { PRESETS, anchorXY, hAlign, unit } from './model'
-import type { Design, El, HeadlineEl, TextEl, BadgeEl, LogoEl, CardEl, EmblemEl, ImageEl, ArrowEl, StackEl, Background, Shade, FontId } from './model'
+import { DEFAULT_BRAND, alpha, colorOf, mediaOf, rgbOf, type Brand } from './ui/brand'
+import { capOf, ensureFont, fitSize, fontOf, onFontsChange, stackOf, weightOf, type FontDef } from './ui/fonts'
+import { iconDef } from './ui/icons'
+import { PRESETS, anchorXY, flatten, hAlign, unit } from './model'
+import type { Align, Design, El, HeadlineEl, TextEl, BadgeEl, LogoEl, CardEl, RuleEl, EmblemEl, ImageEl, ShapeEl, ArrowEl, StackEl, Background, Shade } from './model'
 
-const fira = loadFira('normal', { weights: ['400', '600', '700', '800', '900'], subsets: ['latin'] })
-export const FIRA_FAMILY = String(fira.fontFamily).replace(/["']/g, '')
+export type Assets = Record<string, string | undefined>
 
-export const FONTS: Record<FontId, { family: string; weight: number; upper: boolean; tracking: number; lh: number; cap: number }> = {
-	petrock: { family: '"Kingthings Petrock", "Palatino Linotype", Georgia, serif', weight: 400, upper: false, tracking: 0, lh: 0.98, cap: 0.68 },
-	fira: { family: `${fira.fontFamily}, "Segoe UI", system-ui, sans-serif`, weight: 900, upper: true, tracking: -0.01, lh: 0.92, cap: 0.69 },
+// ---------- fonts a design draws with ----------
+const headFont = (e: Pick<HeadlineEl, 'font'>, brand: Brand) => fontOf(e.font, brand, 'headline')
+export const designFonts = (design: Design, brand: Brand): FontDef[] => {
+	const out = new Map<string, FontDef>()
+	const add = (f: FontDef) => out.set(f.id, f)
+	for (const e of flatten(design.elements)) {
+		if (e.type === 'headline') add(headFont(e, brand))
+		else if (e.type === 'text') add(fontOf(e.font, brand, 'text'))
+		else if (e.type === 'badge') add(fontOf(e.font, brand, 'text'))
+		else if (e.type === 'card') {
+			add(fontOf('', brand, 'text'))
+			add(fontOf(e.titleFont, brand, 'display'))
+		} else if (e.type === 'logo' && !mediaOf(e.src || brand.logo.media, brand) && brand.name) add(fontOf('', brand, 'display'))
+	}
+	return [...out.values()]
 }
-const TEXT = `${fira.fontFamily}, "Segoe UI", system-ui, sans-serif`
-const INK = '#140d08'
 
-// ---------- text measuring (canvas, same font props as render) ----------
-let ctx: CanvasRenderingContext2D | null = null
-const measure = (text: string, family: string, weight: number, size: number, tracking = 0) => {
-	ctx ??= document.createElement('canvas').getContext('2d')
-	if (!ctx) return text.length * size * 0.5
-	ctx.font = `${weight} ${size}px ${family}`
-	;(ctx as any).letterSpacing = `${tracking * size}px`
-	return ctx.measureText(text).width
-}
-// Largest size up to `base` at which every line fits in maxW
-const fitSize = (lines: string[], family: string, weight: number, tracking: number, base: number, maxW: number) =>
-	Math.max(4, Math.floor(Math.min(base, ...lines.map(line => (base * maxW) / Math.max(1, measure(line, family, weight, base, tracking))))))
-
-export const headlineLines = (e: Pick<HeadlineEl, 'text' | 'font'>) => {
-	const f = FONTS[e.font] ?? FONTS.fira
+export const headlineLines = (e: Pick<HeadlineEl, 'text' | 'font' | 'upper'>, brand: Brand = DEFAULT_BRAND) => {
+	const upper = e.upper ?? headFont(e, brand).upper
 	return e.text
 		.split('|')
 		.map(s => s.trim())
 		.filter(Boolean)
-		.map(s => (f.upper ? s.toUpperCase() : s))
-}
-
-const STATUS_COLORS: Record<string, string> = { success: c.success, online: c.success, accent: c.accent, ember: c.accent, warning: c.warning, danger: c.error, error: c.error, offline: c.error, muted: c.rule }
-export const statusColor = (v: string) => STATUS_COLORS[v] ?? (v || c.success)
-const hexA = (hex: string, a: number) => {
-	const m = /^#?([0-9a-f]{6})$/i.exec(hex)
-	if (!m) return `rgba(108,192,112,${a})`
-	const n = parseInt(m[1], 16)
-	return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`
+		.map(s => (upper ? s.toUpperCase() : s))
 }
 
 // ---------- background ----------
 const abs = (style: CSSProperties): CSSProperties => ({ position: 'absolute', ...style })
 
-const shadeCss = (s: Shade, a: number) => {
-	const k = (v: number) => `rgba(13,11,9,${(v * a).toFixed(3)})`
+const shadeCss = (s: Shade, a: number, rgb: [number, number, number]) => {
+	const k = (v: number) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${(v * a).toFixed(3)})`
 	switch (s) {
 		case 'vignette':
 			return `radial-gradient(ellipse 80% 72% at 50% 50%, ${k(0)} 0%, ${k(0.55)} 70%, ${k(0.92)} 100%)`
@@ -75,48 +62,63 @@ const shadeCss = (s: Shade, a: number) => {
 	}
 }
 
-const Backdrop = ({ bg, src, W, H }: { bg: Background; src?: string; W: number; H: number }) => {
+const Backdrop = ({ bg, src, W, H, brand }: { bg: Background; src?: string; W: number; H: number; brand: Brand }) => {
 	const scale = Math.max(bg.zoom, 1 + bg.blur * 0.004)
+	const page = colorOf(bg.color, brand, 'page')
+	const fill = bg.color2 ? `linear-gradient(135deg, ${page}, ${colorOf(bg.color2, brand, 'page')})` : page
+	const shadeRgb = rgbOf(colorOf(bg.shadeColor, brand, 'page')) ?? [0, 0, 0]
+	const filter = `${bg.blur > 0 ? `blur(${bg.blur}px) ` : ''}brightness(${(1 - bg.dim).toFixed(3)}) saturate(${bg.saturate})${bg.contrast !== 1 ? ` contrast(${bg.contrast})` : ''}`
+	const img = src
+		? h('img', {
+				src,
+				style: abs({
+					left: 0,
+					top: 0,
+					width: W,
+					height: H,
+					objectFit: 'cover',
+					objectPosition: `${bg.focusX}% ${bg.focusY}%`,
+					transform: `scale(${scale})`,
+					transformOrigin: `${bg.focusX}% ${bg.focusY}%`,
+					filter,
+					// own compositing layer: without it Chromium clips a blurred image to part of the frame inside a scaled player
+					willChange: 'transform',
+				}),
+			})
+		: null
 	return h(
 		'div',
-		{ 'data-thumb': 'background', style: abs({ left: 0, top: 0, width: W, height: H, overflow: 'hidden', background: c.page }) },
-		src
-			? h('img', {
-					src,
-					style: abs({
-						left: 0,
-						top: 0,
-						width: W,
-						height: H,
-						objectFit: 'cover',
-						objectPosition: `${bg.focusX}% ${bg.focusY}%`,
-						transform: `scale(${scale})`,
-						transformOrigin: `${bg.focusX}% ${bg.focusY}%`,
-						filter: `${bg.blur > 0 ? `blur(${bg.blur}px) ` : ''}brightness(${(1 - bg.dim).toFixed(3)}) saturate(1.08)`,
-						// own compositing layer: without it Chromium clips a blurred image to part of the frame inside a scaled player
-						willChange: 'transform',
-					}),
-				})
-			: null,
-		bg.shade !== 'none' && bg.shadeAmount > 0 ? h('div', { style: abs({ left: 0, top: 0, width: W, height: H, background: shadeCss(bg.shade, bg.shadeAmount) }) }) : null,
+		{ 'data-thumb': 'background', style: abs({ left: 0, top: 0, width: W, height: H, overflow: 'hidden', background: fill }) },
+		// mirrored as a whole, so focus and zoom keep meaning what the preview shows
+		img && bg.flip ? h('div', { style: abs({ left: 0, top: 0, width: W, height: H, transform: 'scaleX(-1)' }) }, img) : img,
+		bg.tint && (bg.tintAmount ?? 0) > 0 ? h('div', { style: abs({ left: 0, top: 0, width: W, height: H, background: colorOf(bg.tint, brand, 'accent'), opacity: bg.tintAmount, mixBlendMode: 'color' }) }) : null,
+		bg.shade !== 'none' && bg.shadeAmount > 0 ? h('div', { style: abs({ left: 0, top: 0, width: W, height: H, background: shadeCss(bg.shade, bg.shadeAmount, shadeRgb) }) }) : null,
 	)
 }
 
 // ---------- text pieces ----------
-const treatment = (t: HeadlineEl['treatment'], size: number, color: string): CSSProperties =>
-	t === 'outline'
-		? {
-				color,
-				WebkitTextStroke: `${Math.max(3, size * 0.075).toFixed(1)}px ${INK}`,
-				paintOrder: 'stroke fill',
-				textShadow: `0 ${(size * 0.05).toFixed(1)}px 0 rgba(0,0,0,.6), 0 0 ${(size * 0.35).toFixed(1)}px rgba(0,0,0,.55)`,
-			}
-		: t === 'shadow'
-			? {
-					color,
-					textShadow: `0 ${(size * 0.035).toFixed(1)}px ${(size * 0.03).toFixed(1)}px rgba(0,0,0,.9), 0 0 ${(size * 0.22).toFixed(1)}px rgba(0,0,0,.8), 0 0 ${(size * 0.6).toFixed(1)}px rgba(0,0,0,.45)`,
-				}
-			: { color }
+type Fx = { treatment: HeadlineEl['treatment']; stroke?: number; strokeColor?: string; shadow?: number; glowColor?: string }
+const px = (n: number) => `${n.toFixed(1)}px`
+const dropShadow = (size: number, k: number) => `0 ${px(size * 0.035 * k)} ${px(size * 0.03 * k)} rgba(0,0,0,.9), 0 0 ${px(size * 0.22 * k)} rgba(0,0,0,.8), 0 0 ${px(size * 0.6 * k)} rgba(0,0,0,.45)`
+
+// How a headline is held off the picture. An element's own stroke and shadow settings adjust the treatment's.
+const treatment = (e: Fx, size: number, color: string, brand: Brand): CSSProperties => {
+	const t = e.treatment
+	const k = e.shadow ?? (t === 'plain' || t === 'box' ? 0 : 1)
+	const strokeW = e.stroke !== undefined ? e.stroke * size : t === 'outline' ? Math.max(3, size * 0.075) : 0
+	const stroke: CSSProperties = strokeW > 0 ? { WebkitTextStroke: `${px(strokeW)} ${colorOf(e.strokeColor, brand, 'ink')}`, paintOrder: 'stroke fill' } : {}
+	let textShadow = 'none'
+	if (k > 0) {
+		if (t === 'outline') textShadow = `0 ${px(size * 0.05 * k)} 0 rgba(0,0,0,.6), 0 0 ${px(size * 0.35 * k)} rgba(0,0,0,.55)`
+		else if (t === 'neon') {
+			// pale fill, a hard colored edge, a two-tone glow and a dark halo to hold it off the picture
+			const glow = e.glowColor ? colorOf(e.glowColor, brand, 'accent') : ''
+			const [edge, near, far] = glow ? [glow, alpha(glow, 0.9), alpha(glow, 0.7)] : ['#d93bdc', 'rgba(255,45,149,.9)', 'rgba(224,33,255,.7)']
+			textShadow = `${px(-size * 0.03)} ${px(size * 0.034)} 0 ${edge}, 0 ${px(size * 0.03)} ${px(size * 0.06)} rgba(20,4,40,.9), 0 0 ${px(size * 0.14 * k)} ${near}, 0 0 ${px(size * 0.42 * k)} ${far}, 0 0 ${px(size * 0.9 * k)} rgba(20,4,40,.85)`
+		} else textShadow = dropShadow(size, k)
+	}
+	return { color, ...stroke, textShadow }
+}
 
 const withAccent = (line: string, accent: string, color: string): ReactNode[] => {
 	const a = accent.trim()
@@ -124,6 +126,8 @@ const withAccent = (line: string, accent: string, color: string): ReactNode[] =>
 	const out: ReactNode[] = []
 	const lower = line.toLowerCase()
 	const al = a.toLowerCase()
+	// lowercasing can change a string's length (some scripts): matching by index would then cut words in the wrong place
+	if (lower.length !== line.length || al.length !== a.length) return [line]
 	let i = 0
 	let k = 0
 	while (i < line.length) {
@@ -139,25 +143,30 @@ const withAccent = (line: string, accent: string, color: string): ReactNode[] =>
 	return out
 }
 
-type Ctx = { W: number; H: number; u: number; assets: Record<string, string | undefined>; align: 'start' | 'center' | 'end' }
-const flexAlign = (a: Ctx['align']) => (a === 'start' ? 'flex-start' : a === 'end' ? 'flex-end' : 'center')
+type Ctx = { W: number; H: number; u: number; assets: Assets; align: Align; brand: Brand }
+const flexAlign = (a: Align) => (a === 'start' ? 'flex-start' : a === 'end' ? 'flex-end' : 'center')
+const textAlign = (a: Align) => (a === 'start' ? 'left' : a === 'end' ? 'right' : 'center')
 
 const Headline = (e: HeadlineEl, x: Ctx) => {
-	const f = FONTS[e.font] ?? FONTS.fira
-	const lines = headlineLines(e)
+	const f = headFont(e, x.brand)
+	const stack = stackOf(f)
+	const weight = weightOf(f, e.weight ?? f.weight)
+	const tracking = e.tracking ?? f.tracking
+	const lines = headlineLines(e, x.brand)
 	if (!lines.length) return null
 	const box = e.treatment === 'box'
 	const maxW = (e.w / 100) * x.W
-	const size = fitSize(lines, f.family, f.weight, f.tracking, e.size * x.u, box ? maxW / 1.36 : maxW)
-	const accent = e.accentColor || (box ? c.accentLift : c.accent)
+	const size = fitSize(lines, stack, weight, tracking, e.size * x.u, box ? maxW / 1.36 : maxW)
+	const accent = colorOf(e.accentColor, x.brand, box ? 'accentAlt' : 'accent')
+	const align = e.align ?? x.align
 	return h(
 		'div',
 		{
 			'data-thumb': 'title',
 			'data-count': '1',
 			'data-fs': size,
-			'data-cap': f.cap,
-			style: { display: 'flex', flexDirection: 'column', alignItems: flexAlign(x.align), textAlign: x.align === 'start' ? 'left' : x.align === 'end' ? 'right' : 'center', gap: box ? size * 0.1 : 0 },
+			'data-cap': capOf(f, weight),
+			style: { display: 'flex', flexDirection: 'column', alignItems: flexAlign(align), textAlign: textAlign(align), gap: box ? size * 0.1 : 0 },
 		},
 		...lines.map((line, i) =>
 			h(
@@ -165,19 +174,18 @@ const Headline = (e: HeadlineEl, x: Ctx) => {
 				{
 					key: i,
 					style: {
-						fontFamily: f.family,
-						fontWeight: f.weight,
+						fontFamily: stack,
+						fontWeight: weight,
 						fontSize: size,
-						lineHeight: f.lh,
-						letterSpacing: `${f.tracking}em`,
+						lineHeight: e.lineHeight ?? f.lh,
+						letterSpacing: `${tracking}em`,
 						whiteSpace: 'nowrap',
-						...treatment(e.treatment, size, e.color || c.fgHeading),
+						...treatment(e, size, colorOf(e.color, x.brand, 'text'), x.brand),
 						...(box
 							? {
-									background: 'rgba(15,12,9,.9)',
-									border: `${Math.max(2, size * 0.02)}px solid rgba(203,182,140,.6)`,
+									background: alpha(colorOf(e.boxColor, x.brand, 'panel'), 0.9),
+									border: `${Math.max(2, size * 0.02)}px solid ${alpha(x.brand.colors.muted, 0.6)}`,
 									padding: `${size * 0.08}px ${size * 0.18}px ${size * 0.12}px`,
-									textShadow: 'none',
 								}
 							: null),
 					},
@@ -189,29 +197,34 @@ const Headline = (e: HeadlineEl, x: Ctx) => {
 }
 
 const Text = (e: TextEl, x: Ctx) => {
-	const f = FONTS[e.font] ?? FONTS.fira
-	const weight = e.font === 'petrock' ? 400 : e.weight
+	const f = fontOf(e.font, x.brand, 'text')
+	const stack = stackOf(f)
+	const weight = weightOf(f, e.weight)
 	const lines = e.text.split('|').map(s => (e.upper ? s.trim().toUpperCase() : s.trim())).filter(Boolean)
 	if (!lines.length) return null
-	const size = fitSize(lines, f.family, weight, e.tracking, e.size * x.u, (e.w / 100) * x.W)
+	const size = fitSize(lines, stack, weight, e.tracking, e.size * x.u, (e.w / 100) * x.W)
+	const align = e.align ?? x.align
+	const k = e.shadow ?? 1
 	return h(
 		'div',
 		{
 			'data-thumb': 'text',
 			'data-count': '0',
 			'data-fs': size,
-			'data-cap': 0.7,
+			'data-cap': capOf(f, weight),
 			style: {
 				display: 'flex',
 				flexDirection: 'column',
-				alignItems: flexAlign(x.align),
-				fontFamily: f.family,
+				alignItems: flexAlign(align),
+				textAlign: textAlign(align),
+				fontFamily: stack,
 				fontWeight: weight,
 				fontSize: size,
-				lineHeight: 1.2,
+				lineHeight: e.lineHeight ?? 1.2,
 				letterSpacing: `${e.tracking}em`,
-				color: e.color || c.rule,
-				textShadow: `0 2px 3px rgba(0,0,0,.9), 0 0 ${size * 0.6}px rgba(0,0,0,.7)`,
+				color: colorOf(e.color, x.brand, 'muted'),
+				textShadow: k > 0 ? `0 ${2 * k}px ${3 * k}px rgba(0,0,0,.9), 0 0 ${size * 0.6 * k}px rgba(0,0,0,.7)` : 'none',
+				...(e.stroke ? { WebkitTextStroke: `${px(e.stroke * size)} ${colorOf(e.strokeColor, x.brand, 'ink')}`, paintOrder: 'stroke fill' } : null),
 				whiteSpace: 'nowrap',
 			},
 		},
@@ -220,29 +233,33 @@ const Text = (e: TextEl, x: Ctx) => {
 }
 
 const Badge = (e: BadgeEl, x: Ctx) => {
-	const text = e.text.trim()
+	const text = e.upper === false ? e.text.trim() : e.text.trim().toUpperCase()
 	if (!text) return null
+	const f = fontOf(e.font, x.brand, 'text')
+	const stack = stackOf(f)
+	const weight = weightOf(f, e.weight ?? 800)
+	const tracking = e.tracking ?? 0.06
 	// padding adds about 1 em plus tracking: fit the label so the pill stays inside w
-	const size = fitSize([text.toUpperCase()], TEXT, 800, 0.06, e.size * x.u, (e.w / 100) * x.W - e.size * x.u)
+	const size = fitSize([text], stack, weight, tracking, e.size * x.u, (e.w / 100) * x.W - e.size * x.u)
 	return h(
 		'div',
 		{
 			'data-thumb': 'badge',
 			'data-count': '1',
 			'data-fs': size,
-			'data-cap': 0.7,
+			'data-cap': capOf(f, weight),
 			style: {
 				display: 'inline-flex',
 				alignItems: 'center',
-				fontFamily: TEXT,
-				fontWeight: 800,
+				fontFamily: stack,
+				fontWeight: weight,
 				fontSize: size,
 				lineHeight: 1,
-				letterSpacing: '0.06em',
-				textTransform: 'uppercase',
-				color: e.color || c.onAccent,
-				background: e.fill || c.accent,
+				letterSpacing: `${tracking}em`,
+				color: colorOf(e.color, x.brand, 'onAccent'),
+				background: colorOf(e.fill, x.brand, 'accent'),
 				padding: `${size * 0.28}px ${size * 0.5}px ${size * 0.24}px`,
+				borderRadius: e.radius ? size * 0.76 * e.radius : undefined,
 				boxShadow: `0 ${size * 0.12}px ${size * 0.4}px rgba(0,0,0,.55)`,
 				whiteSpace: 'nowrap',
 			},
@@ -251,34 +268,47 @@ const Badge = (e: BadgeEl, x: Ctx) => {
 	)
 }
 
+// The kit's logo image (or one picked for this element). Without an image the brand name stands in as a wordmark.
 const Logo = (e: LogoEl, x: Ctx) => {
 	const width = (e.w / 100) * x.W
-	const src = x.assets.logo
-	return h('img', {
-		src: src || undefined,
-		'data-thumb': 'logo',
-		'data-count': '1',
-		style: {
-			display: 'block',
-			width,
-			height: (width * 237) / 719,
-			visibility: src ? 'visible' : 'hidden',
-			filter: `drop-shadow(0 0 ${width * 0.05}px rgba(255,138,31,${e.glow})) drop-shadow(0 ${width * 0.01}px ${width * 0.015}px rgba(0,0,0,.8))`,
-		},
-	})
+	const media = mediaOf(e.src || x.brand.logo.media, x.brand)
+	const glow = e.glow > 0 ? `drop-shadow(0 0 ${width * 0.05}px ${alpha(colorOf(e.glowColor, x.brand, 'accent'), e.glow)}) ` : ''
+	const filter = `${glow}drop-shadow(0 ${width * 0.01}px ${width * 0.015}px rgba(0,0,0,.8))`
+	if (!media) {
+		const name = x.brand.name.trim()
+		if (!name) return null
+		const f = fontOf('', x.brand, 'display')
+		const label = f.upper ? name.toUpperCase() : name
+		const size = fitSize([label], stackOf(f), f.weight, f.tracking, width * 0.4, width)
+		return h('div', { 'data-thumb': 'logo', 'data-count': '1', 'data-fs': size, 'data-cap': capOf(f, f.weight), style: { fontFamily: stackOf(f), fontWeight: f.weight, fontSize: size, lineHeight: 1, letterSpacing: `${f.tracking}em`, color: x.brand.colors.text, whiteSpace: 'nowrap', filter } }, label)
+	}
+	const src = x.assets[media]
+	// until the image arrives, hold a wide box so a stack does not jump
+	if (!src) return h('div', { 'data-thumb': 'logo', 'data-count': '1', style: { width, height: width * 0.33 } })
+	return h('img', { src, 'data-thumb': 'logo', 'data-count': '1', style: { display: 'block', width, height: 'auto', filter } })
 }
 
-// Veiled OB:MP panel with an oversized status line, server name and player count
+const Icon = ({ name, size, brand }: { name: string; size: number; brand: Brand }) => {
+	const def = iconDef(name, brand)
+	return h('svg', { width: size, height: size, viewBox: `0 0 ${def.box} ${def.box}`, style: { display: 'block', overflow: 'visible', filter: 'drop-shadow(0 3px 4px rgba(0,0,0,.7))' } }, h('path', { d: def.d, fill: 'currentColor' }))
+}
+
+// Veiled panel with a colored label line, a large title and a line of detail. Empty lines are left out.
 const Card = (e: CardEl, x: Ctx) => {
+	const c = x.brand.colors
 	const width = (e.w / 100) * x.W
 	const u = width / 800
-	const col = statusColor(e.statusColor)
-	const fit = (text: string, family: string, weight: number, tracking: number, base: number, room: number) => fitSize([text], family, weight, tracking, base, room)
+	const col = colorOf(e.labelColor, x.brand, 'success')
+	const tf = fontOf('', x.brand, 'text')
+	const text = stackOf(tf)
+	const df = fontOf(e.titleFont, x.brand, 'display')
 	const inner = width - 108 * u
-	const statusFs = e.status.trim() ? fit(e.status, TEXT, 800, 0.04, 64 * u, inner - (e.dot ? 62 * u : 0)) : 0
-	const nameFs = e.server.trim() ? fit(e.server, FONTS.petrock.family, 400, 0, 92 * u, inner) : 0
-	const playersText = [e.players.trim(), e.playersLabel.trim()].filter(Boolean).join(' ')
-	const playersFs = e.players.trim() ? fit(playersText, TEXT, 700, 0, 56 * u, inner - (e.icon ? 90 * u : 0)) : 0
+	const label = e.label.trim()
+	const title = e.title.trim()
+	const detail = e.detail.trim()
+	const labelFs = label ? fitSize([label], text, weightOf(tf, 800), 0.04, 64 * u, inner - (e.dot ? 62 * u : 0)) : 0
+	const titleFs = title ? fitSize([title], stackOf(df), df.weight, 0, 92 * u, inner) : 0
+	const detailFs = detail ? fitSize([detail], text, weightOf(tf, 700), 0, 56 * u, inner - (e.icon ? 90 * u : 0)) : 0
 	return h(
 		'div',
 		{
@@ -288,61 +318,88 @@ const Card = (e: CardEl, x: Ctx) => {
 				width,
 				boxSizing: 'border-box',
 				padding: `${44 * u}px ${54 * u}px ${48 * u}px`,
-				background: 'rgba(15,12,9,.86)',
-				border: `${Math.max(2, 3 * u)}px solid rgba(203,182,140,.55)`,
-				boxShadow: `0 ${30 * u}px ${70 * u}px -${10 * u}px rgba(0,0,0,.8), inset 0 0 ${80 * u}px rgba(112,72,24,.35)`,
+				background: alpha(c.panel, 0.86),
+				border: `${Math.max(2, 3 * u)}px solid ${alpha(c.muted, 0.55)}`,
+				boxShadow: `0 ${30 * u}px ${70 * u}px -${10 * u}px rgba(0,0,0,.8)${c.panelGlow ? `, inset 0 0 ${80 * u}px ${alpha(c.panelGlow, 0.35)}` : ''}`,
 				display: 'flex',
 				flexDirection: 'column',
 				gap: 22 * u,
 			},
 		},
-		e.status.trim()
+		label
 			? h(
 					'div',
 					{
-						'data-thumb': 'card-status',
-						'data-fs': statusFs,
-						'data-cap': 0.7,
-						style: { display: 'flex', alignItems: 'center', gap: 22 * u, fontFamily: TEXT, fontWeight: 800, fontSize: statusFs, lineHeight: 1, letterSpacing: '0.04em', color: col, whiteSpace: 'nowrap' },
+						'data-thumb': 'card-label',
+						'data-fs': labelFs,
+						'data-cap': capOf(tf, weightOf(tf, 800)),
+						style: { display: 'flex', alignItems: 'center', gap: 22 * u, fontFamily: text, fontWeight: weightOf(tf, 800), fontSize: labelFs, lineHeight: 1, letterSpacing: '0.04em', color: col, whiteSpace: 'nowrap' },
 					},
-					e.dot ? h('div', { style: { width: 40 * u, height: 40 * u, borderRadius: '50%', background: col, boxShadow: `0 0 0 ${8 * u}px ${hexA(col, 0.22)}, 0 0 ${36 * u}px ${hexA(col, 0.9)}`, flex: 'none' } }) : null,
-					e.status,
+					e.dot ? h('div', { style: { width: 40 * u, height: 40 * u, borderRadius: '50%', background: col, boxShadow: `0 0 0 ${8 * u}px ${alpha(col, 0.22)}, 0 0 ${36 * u}px ${alpha(col, 0.9)}`, flex: 'none' } }) : null,
+					label,
 				)
 			: null,
-		h('div', { style: { height: Math.max(1.5, 2 * u), background: 'linear-gradient(90deg, rgba(203,182,140,.7), rgba(203,182,140,0))' } }),
-		e.server.trim()
-			? h('div', { 'data-thumb': 'card-name', 'data-fs': nameFs, 'data-cap': 0.68, style: { fontFamily: FONTS.petrock.family, fontSize: nameFs, lineHeight: 1, color: c.fgHeading, whiteSpace: 'nowrap' } }, e.server)
-			: null,
-		e.players.trim()
+		h('div', { style: { height: Math.max(1.5, 2 * u), background: `linear-gradient(90deg, ${alpha(c.muted, 0.7)}, ${alpha(c.muted, 0)})` } }),
+		title ? h('div', { 'data-thumb': 'card-title', 'data-fs': titleFs, 'data-cap': capOf(df, df.weight), style: { fontFamily: stackOf(df), fontWeight: df.weight, fontSize: titleFs, lineHeight: 1, color: c.text, whiteSpace: 'nowrap' } }, df.upper ? title.toUpperCase() : title) : null,
+		detail
 			? h(
 					'div',
 					{
-						'data-thumb': 'card-players',
-						'data-fs': playersFs,
-						'data-cap': 0.7,
-						style: { display: 'flex', alignItems: 'center', gap: 20 * u, fontFamily: TEXT, fontWeight: 700, fontSize: playersFs, lineHeight: 1, color: c.fg, whiteSpace: 'nowrap' },
+						'data-thumb': 'card-detail',
+						'data-fs': detailFs,
+						'data-cap': capOf(tf, weightOf(tf, 700)),
+						style: { display: 'flex', alignItems: 'center', gap: 20 * u, fontFamily: text, fontWeight: weightOf(tf, 700), fontSize: detailFs, lineHeight: 1, color: c.body, whiteSpace: 'nowrap' },
 					},
-					e.icon ? h('div', { style: { color: c.rule, display: 'flex' } }, h(Emblem, { name: 'fellowship', size: 70 * u })) : null,
-					playersText,
+					e.icon ? h('div', { style: { color: c.muted, display: 'flex' } }, h(Icon, { name: e.icon, size: 70 * u, brand: x.brand })) : null,
+					detail,
 				)
 			: null,
 	)
 }
 
-const Rule = (e: El, x: Ctx) => h('div', { 'data-thumb': 'rule', 'data-count': '0', style: { opacity: 0.9, display: 'flex', justifyContent: 'center' } }, h(CenterRule, { width: Math.round((e.w / 100) * x.W) }))
+// A fading line, or the kit's ornament between two hairlines when it has one
+const Rule = (e: RuleEl, x: Ctx) => {
+	const width = Math.round((e.w / 100) * x.W)
+	const color = colorOf(e.color, x.brand, 'muted')
+	const orn = e.plain ? null : x.brand.divider
+	if (!orn) {
+		const t = Math.max(1, (e.thickness ?? 3) * x.u)
+		return h('div', { 'data-thumb': 'rule', 'data-count': '0', style: { width, height: t, borderRadius: t, opacity: 0.9, background: `linear-gradient(90deg, ${alpha(color, 0)}, ${color} 18%, ${color} 82%, ${alpha(color, 0)})` } })
+	}
+	const markH = 30
+	const markW = (orn.w * markH) / orn.h
+	const side = Math.max(0, (width - markW) / 2 + markW * 0.058)
+	const line = (dir: number): CSSProperties => abs({ [dir > 0 ? 'left' : 'right']: 0, top: markH / 2, width: side, height: 1.2, background: `linear-gradient(${dir > 0 ? 270 : 90}deg, ${color}, transparent)` })
+	return h(
+		'div',
+		{ 'data-thumb': 'rule', 'data-count': '0', style: { opacity: 0.9, display: 'flex', justifyContent: 'center' } },
+		h(
+			'div',
+			{ style: { position: 'relative', width, height: markH } },
+			h('div', { style: line(1) }),
+			h(
+				'svg',
+				{ width: markW, height: markH, viewBox: `0 0 ${orn.w} ${orn.h}`, fill: 'none', stroke: color, strokeWidth: 2, strokeLinecap: 'round', style: abs({ left: (width - markW) / 2, top: 0, display: 'block' }) },
+				...orn.paths.map((p, i) => h('path', { key: i, d: p.d, fill: p.fill, stroke: p.stroke, strokeWidth: p.strokeWidth, opacity: p.opacity, transform: p.transform })),
+			),
+			h('div', { style: line(-1) }),
+		),
+	)
+}
 
-const EmblemEl_ = (e: EmblemEl, x: Ctx) =>
+const Emblem = (e: EmblemEl, x: Ctx) =>
 	h(
 		'div',
-		{ 'data-thumb': 'emblem', 'data-count': '1', style: { color: e.color || c.rule, display: 'flex', filter: `drop-shadow(0 ${e.size * x.u * 0.03}px ${e.size * x.u * 0.06}px rgba(0,0,0,.8))` } },
-		h(Emblem, { name: e.icon as any, size: e.size * x.u }),
+		{ 'data-thumb': 'emblem', 'data-count': '1', style: { color: colorOf(e.color, x.brand, 'muted'), display: 'flex', filter: `drop-shadow(0 ${e.size * x.u * 0.03}px ${e.size * x.u * 0.06}px rgba(0,0,0,.8))` } },
+		h(Icon, { name: e.icon, size: e.size * x.u, brand: x.brand }),
 	)
 
 const Image = (e: ImageEl, x: Ctx) => {
 	const width = (e.w / 100) * x.W
 	const height = e.h ? (e.h / 100) * x.H : undefined
-	const src = x.assets[e.src]
-	const b = Math.max(2, 4 * x.u)
+	const src = x.assets[mediaOf(e.src, x.brand)]
+	const b = Math.max(2, (e.borderWidth ?? 4) * x.u)
+	const radius = e.radius ? (e.radius >= 50 ? '50%' : (e.radius / 100) * width) : undefined
 	return h(
 		'div',
 		{
@@ -352,23 +409,39 @@ const Image = (e: ImageEl, x: Ctx) => {
 				width,
 				height: height ?? (src ? undefined : width * 0.5625),
 				boxSizing: 'border-box',
-				border: e.border ? `${b}px solid rgba(203,182,140,.75)` : undefined,
+				border: e.border ? `${b}px solid ${e.borderColor ? colorOf(e.borderColor, x.brand, 'muted') : alpha(x.brand.colors.muted, 0.75)}` : undefined,
+				borderRadius: radius,
 				boxShadow: e.shadow ? `0 ${24 * x.u}px ${60 * x.u}px -${8 * x.u}px rgba(0,0,0,.85)` : undefined,
-				background: 'rgba(15,12,9,.6)',
+				// a mat behind framed or missing pictures; cut-outs without a frame stay see-through
+				background: e.border || !src ? alpha(x.brand.colors.panel, 0.6) : undefined,
 				overflow: 'hidden',
 			},
 		},
-		src ? h('img', { src, style: { display: 'block', width: '100%', height: height ? '100%' : 'auto', objectFit: e.fit } }) : null,
+		src ? h('img', { src, style: { display: 'block', width: '100%', height: height ? '100%' : 'auto', objectFit: e.fit, objectPosition: `${e.focusX ?? 50}% ${e.focusY ?? 50}%`, transform: e.flip ? 'scaleX(-1)' : undefined } }) : null,
 	)
 }
 
+const Shape = (e: ShapeEl, x: Ctx) =>
+	h('div', {
+		'data-thumb': 'shape',
+		'data-count': '0',
+		style: {
+			width: (e.w / 100) * x.W,
+			height: (e.h / 100) * x.H,
+			boxSizing: 'border-box',
+			background: colorOf(e.fill, x.brand, 'accent'),
+			border: e.borderWidth > 0 ? `${e.borderWidth * x.u}px solid ${colorOf(e.borderColor, x.brand, 'text')}` : undefined,
+			borderRadius: e.shape === 'ellipse' ? '50%' : e.radius * x.u,
+			boxShadow: e.shadow ? `0 ${16 * x.u}px ${44 * x.u}px -${6 * x.u}px rgba(0,0,0,.8)` : undefined,
+		},
+	})
+
 const Arrow = (e: ArrowEl, x: Ctx) => {
 	const width = (e.w / 100) * x.W
-	const col = e.color || c.accent
 	return h(
 		'svg',
 		{ 'data-thumb': 'arrow', 'data-count': '1', width, height: width * 0.62, viewBox: '0 0 100 62', style: { display: 'block', overflow: 'visible', filter: `drop-shadow(0 ${width * 0.03}px ${width * 0.05}px rgba(0,0,0,.75))` } },
-		h('path', { d: 'M4 22 L58 22 L58 6 L96 31 L58 56 L58 40 L4 40 Z', fill: col, stroke: INK, strokeWidth: 4, strokeLinejoin: 'round' }),
+		h('path', { d: 'M4 22 L58 22 L58 6 L96 31 L58 56 L58 40 L4 40 Z', fill: colorOf(e.color, x.brand, 'accent'), stroke: colorOf(e.strokeColor, x.brand, 'ink'), strokeWidth: 4, strokeLinejoin: 'round' }),
 	)
 }
 
@@ -387,9 +460,11 @@ const body = (e: El, x: Ctx): ReactNode => {
 		case 'rule':
 			return Rule(e, x)
 		case 'emblem':
-			return EmblemEl_(e, x)
+			return Emblem(e, x)
 		case 'image':
 			return Image(e, x)
+		case 'shape':
+			return Shape(e, x)
 		case 'arrow':
 			return Arrow(e, x)
 		case 'stack':
@@ -436,15 +511,20 @@ const Placed = (e: El, x: Ctx) => {
 
 // ---------- the still ----------
 // renderKey lands on the root as data-key so the panel can tell when a queued render has committed
-export const ThumbArt = ({ design, assets, renderKey }: { design: Design; assets: Record<string, string | undefined>; renderKey?: string }) => {
+export const ThumbArt = ({ design, assets, brand: kit, renderKey }: { design: Design; assets: Assets; brand?: Brand; renderKey?: string }) => {
+	const brand = kit ?? DEFAULT_BRAND
+	// text is measured to fit, so draw again when a font arrives
+	const [, setFontTick] = useState(0)
+	useEffect(() => onFontsChange(() => setFontTick(n => n + 1)), [])
+	for (const f of designFonts(design, brand)) ensureFont(f)
 	const p = PRESETS[design.preset] ?? PRESETS.youtube
 	const W = p.w
 	const H = p.h
-	const x: Ctx = { W, H, u: unit(p), assets, align: 'center' }
+	const x: Ctx = { W, H, u: unit(p), assets, align: 'center', brand }
 	return h(
 		'div',
-		{ 'data-thumb-root': '1', 'data-key': renderKey ?? '', style: { position: 'absolute', left: 0, top: 0, width: W, height: H, overflow: 'hidden', background: c.page } },
-		h(Backdrop, { bg: design.background, src: assets[design.background.src], W, H }),
+		{ 'data-thumb-root': '1', 'data-key': renderKey ?? '', style: { position: 'absolute', left: 0, top: 0, width: W, height: H, overflow: 'hidden', background: brand.colors.page } },
+		h(Backdrop, { bg: design.background, src: assets[mediaOf(design.background.src, brand)], W, H, brand }),
 		...design.elements.filter(e => e.visible !== false).map(e => Placed(e, x)),
 	)
 }

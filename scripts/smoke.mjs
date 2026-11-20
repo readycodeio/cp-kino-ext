@@ -14,7 +14,7 @@ if (PORT === 47680) {
   console.error("The smoke test must not use 47680, the port of your real bridge.");
   process.exit(1);
 }
-const EXPECTED_FEATURES = ["pty", "ytdl", "tts", "thumbs", "thumbs-prompt", "zernio", "publish-media"];
+const EXPECTED_FEATURES = ["auth", "pty", "ytdl", "ytdl-config", "ytdl-formats", "tts-config", "tts", "thumbs", "thumbs-prompt", "zernio", "publish-media"];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "kino-smoke-"));
 const dirs = Object.fromEntries(["data", "voice", "docs", "projects", "ytdl"].map(name => [name, path.join(tmp, name)]));
@@ -24,6 +24,19 @@ fs.writeFileSync(
   path.join(dirs.data, "tokens.json"),
   JSON.stringify({ tokens: [{ sha256: crypto.createHash("sha256").update(token).digest("hex"), created: new Date().toISOString() }] }),
 );
+
+// Fake mounts for the auto-install check: a fresh project, a fork that still names its parent, and a
+// plain folder Kino did not mount. Their baselines are a minute old, so the bridge treats them as settled.
+const aMinuteAgo = new Date(Date.now() - 60_000);
+for (const id of ["fresh01", "forked01"]) {
+  const baseline = path.join(dirs.projects, id, ".kino-mount", "baseline.json");
+  fs.mkdirSync(path.dirname(baseline), { recursive: true });
+  fs.writeFileSync(baseline, "{}");
+  fs.utimesSync(baseline, aMinuteAgo, aMinuteAgo);
+}
+fs.mkdirSync(path.join(dirs.projects, "forked01", "panels"), { recursive: true });
+fs.writeFileSync(path.join(dirs.projects, "forked01", "panels", "project.ts"), 'export const PROJECT_ID = "parent01"\n');
+fs.mkdirSync(path.join(dirs.projects, "Thumbnails"), { recursive: true });
 
 const env = { ...process.env };
 for (const key of Object.keys(env)) if (/^(ELEVENLABS_|ZERNIO_|KINO_)/i.test(key)) delete env[key];
@@ -133,7 +146,7 @@ const badOriginUpgrade = () =>
 try {
   console.log(`Smoke test: temporary bridge on 127.0.0.1:${PORT}, data in ${tmp}\n`);
   const health = await waitForHealth();
-  check("health", health.json?.ok === true && health.json.version >= 8, `v${health.json?.version}`);
+  check("health", health.json?.ok === true && health.json.version >= 10, `v${health.json?.version}`);
   check("health reports this platform", health.json?.platform === process.platform, health.json?.platform);
   check("all features", EXPECTED_FEATURES.every(f => health.json?.features?.includes(f)), (health.json?.features ?? []).join(", "));
 
@@ -142,9 +155,15 @@ try {
   check("rejects other Host headers", (await request(PORT, "/health", { host: "evil.example" })).status === 403);
   check("routes need a token", (await request(PORT, "/zernio/status")).status === 401);
   check("rejects a wrong token", (await request(PORT, "/zernio/status", { token: "y".repeat(43) })).status === 401);
+  check("token check needs a token", (await request(PORT, "/auth")).status === 401);
+  check("token check accepts a paired token", (await request(PORT, "/auth", { token })).json?.ok === true);
+  check("unknown routes are not found", (await request(PORT, "/ytdl", { token })).status === 404 && (await request(PORT, "/nope")).status === 404);
 
   const zernio = await request(PORT, "/zernio/status", { token });
   check("zernio status (no key yet)", zernio.status === 200 && zernio.json?.configured === false);
+
+  check("publish: unknown sent post is not found", (await request(PORT, "/zernio/posts/sent?key=xxxxxxxx", { token })).status === 404);
+  check("publish: posting needs an explicit confirm", (await request(PORT, "/zernio/posts/create", { method: "POST", token, body: {} })).status === 400);
 
   const tts = await request(PORT, "/tts/status", { token, timeout: 30_000 });
   check("voiceover worker starts", tts.status === 200 && tts.json?.hasKey === false && tts.json?.envFile === false, `sdk ${tts.json?.sdk ?? "?"}, voiceDir ${tts.json?.voiceDir}`);
@@ -154,6 +173,19 @@ try {
 
   const thumbs = await request(PORT, "/thumbs/list?projectId=smoke", { token });
   check("thumbnails list", thumbs.status === 200, thumbs.text.slice(0, 80));
+
+  const read = (...parts) => {
+    try {
+      return fs.readFileSync(path.join(dirs.projects, ...parts), "utf8");
+    } catch {
+      return "";
+    }
+  };
+  const fresh = read("fresh01", "panels", "project.ts");
+  check("auto-install: new project gets the panels", fresh.includes('PROJECT_ID = "fresh01"') && read("fresh01", "panels", "publish", "Panel.tsx").length > 0 && read("fresh01", "thumbs", "designs.json").length > 0);
+  check("auto-install: a fork is relinked to its own id", read("forked01", "panels", "project.ts").includes('PROJECT_ID = "forked01"') && !fs.existsSync(path.join(dirs.projects, "forked01", "panels", "publish")));
+  check("auto-install: unmounted folders are left alone", !fs.existsSync(path.join(dirs.projects, "Thumbnails", "panels")));
+  check("auto-install: remembers what it installed", read("..", "data", "auto-install.json").includes("fresh01"));
 
   check("terminal rejects other origins", (await badOriginUpgrade()) === 403);
   check("terminal rejects a wrong token", (await badTokenCheck()) === 4401);

@@ -1,15 +1,27 @@
 ---
 name: post-copy
-description: Write titles, descriptions and captions for ReadyM videos on YouTube, TikTok, Instagram, Facebook, LinkedIn, X, Threads and Bluesky, from the transcript, in the house voice, into /publish/copy.json.
+description: Write titles, descriptions and captions for a video on YouTube, TikTok, Instagram, Facebook, LinkedIn, X, Threads and Bluesky, from the transcript, in the brand voice set in /publish/knowledge, into /publish/copy.json.
 ---
 
 # Post copy
 
-Companion files: `rules.json` (the same rules, machine-readable, same ids), `references.md` (sources), `format.md` (the copy.json format; read it, never edit it). Compiled 2026-11-08, updated 2026-11-09.
+Companion files: `rules.json` (the same rules, machine-readable, same ids), `references.md` (sources), `format.md` (the copy.json format; read it, never edit it). Sources compiled 2026-11-08, updated 2026-11-19.
 
-**Voice and platform choice:** load the global `readym-social-voice` skill (`~/.claude/skills/readym-social-voice/SKILL.md`, Codex copy in `~/.codex/skills/`). It was built on 2026-11-09 from measured top posts on our YouTube and TikTok and on KCD:MP, Open77 and Speclizer, and covers hooks, titles, what wins on each platform and the CTA ladder. On voice and hooks it wins over this file. On panel mechanics, hard limits and the copy.json format, this file and `format.md` win. Facts and links still come only from the content kit and the video.
+## Skill and knowledge
 
-Evidence labels: **measured** = a number from a study, with sample and source id. **Official** = a platform statement without numbers. **Observed** = a pattern in real posts. Vendor studies show correlation, not cause. Anything we could not check is marked unverified.
+This skill covers writing craft and platform mechanics for any brand. Everything about one brand lives in `/publish/knowledge/README.md`, which the user fills in: who "we" are, voice and tone, banned words, punctuation, names, product facts, links, handles, claims never to make, extra skills to load and any rewrite pass.
+
+1. Read `/publish/knowledge/README.md` before anything else, plus any file it points to.
+2. Load every agent skill it names under "Skills to load". If one is not installed, write from the README and the video, and say so in `notes`.
+3. Ignore lines that start with `Example:`. They are template placeholders. An empty section means the brand has not said, so use this skill's defaults. If the README is missing or empty, write in the plain default voice below and say so in `notes` and in your reply.
+
+Order of authority:
+
+1. The honesty rules and hard platform limits in this skill and `format.md`. Nothing overrides them.
+2. The knowledge README and the skills it names: voice, words, punctuation, names, facts, links, the "never claim" list.
+3. The craft defaults in this skill.
+
+Evidence labels: **measured** = a number from a study, with sample and source id. **Official** = a platform statement without numbers. **Observed** = a pattern in real posts. **Unverified** = no public source, so test it against your own analytics. Vendor studies show correlation, not cause.
 
 ## Core philosophy
 
@@ -20,35 +32,31 @@ Evidence labels: **measured** = a number from a study, with sample and source id
    - TikTok: reads the caption, the voiceover and the on-screen text, and flags stuffing (**official**, `tiktok-ca-search`).
    - LinkedIn: its feed model reads what a post is about (**official**, `li-feed-eng-2026`).
 
-   Tutorials get searched, so lead with the words people type (`search-words-first`). Short-form and feed posts get browsed, so lead with the hook and put the keyword second. Across 18,080 channels, search content did best with the keyword in the first 40% of the title, while gaming browse content did best leading with the hook (**measured**, vendor, `air-titles-2026`).
+   Tutorials get searched, so lead with the words people type (`search-words-first`), and use the name newcomers search for, not only your own product name (`full-name-plus-category`, **unverified**). Short-form and feed posts get browsed, so lead with the hook and put the keyword second. Across 18,080 channels, search content did best with the keyword in the first 40% of the title, while browse content did best leading with the hook (**measured**, vendor, `air-titles-2026`).
 4. **Specific beats clever** (`specific-over-generic`).
    - In 4M+ uploads from 2026, titles ending in a question averaged 0.82x, plain how-to titles 1.07x, and specific story frames did best (**measured**, vendor, `vidiq-title-formulas-2026`).
    - 'How to' titles had a median of 1.60x channel baseline vs 0.99x for other titles (1,794 videos). The authors credit search intent, not the phrase (**measured**, vendor, `overseeros-howto-2026`).
    - Use how-to wording when people search for the task (`how-to-for-search`). Write statements, not questions (`statement-over-question`).
 
-## House voice (`house-voice`)
+## Voice (`house-voice`)
 
-Write it the way one of us would explain it on Discord: a modder talking to another player. Make it specific and short. Use "we" for ReadyM and "you" for the viewer.
+The knowledge README sets the voice. Where it is silent, write plainly, the way the person who made the thing would explain it to a customer. The defaults:
 
-- **Dashes:** no em-dashes or en-dashes, ever. Use a comma, colon, period or a plain hyphen.
-- **One real detail per option:** a step, a screen, a version or a number taken from the video.
-- **Contractions are fine.** Write numbers as digits. Use one "!" per option at most.
+- **One real detail per option:** a step, a screen, a part, a version or a number taken from the video.
+- **Plain verbs.** Contractions are fine. Write numbers as digits. Use one "!" per option at most.
 - **No hype stacks:** one intensifier at most. ALL CAPS only for a single word in a hype-tone YouTube title.
 - **No emoji walls.** Emoji never replace words.
 - **Openers:** across the 3 options, at most one starts with a question. Never open with "Hey guys" or "In this video".
-- **Claims:** no "easy", "fast" or "in X minutes" unless the runtime and the transcript prove it.
-- **Candor** (`candid-dev-voice`): what works now, plus one true limit where it fits ("it's a beta, things break"). Never invent bugs or modesty. Speclizer's "very broken" first test got 1.6M views on X (**measured**, `comp-speclizer-2026`).
-- **Concrete nouns:** at least one per option, such as a place (Cloud Ruler Temple), a player count, a system (spell sync, the admin panel) or a version.
-- **Game plus "multiplayer"** (`game-plus-multiplayer`): the full game name and "multiplayer" in the title or first line. The project name alone is not what newcomers search (`comp-open77-2026`).
-- **No date or build templates** (`no-date-template`): never reuse the same date, build or "Part x/y" line across posts. Open77's date-template captions had a median of 944 views (**measured**).
-
-Banned (full list in `rules.json` > `voice.banned`): revolutionary, industry-leading, thrilled to announce, valued community, game-changer, unlock, unleash, elevate, dive in, delve, seamless, next level, ultimate, cutting-edge, groundbreaking, journey, embark, supercharge, look no further, you won't believe, epic, insane, crazy.
+- **Claims:** no "easy", "fast", "free" or "in X minutes" unless the runtime and the transcript prove it.
+- **State it, don't stage it.** Write the fact or the moment. Cut "it's not X, it's Y", a question you answer in the next line, three fragments in a row for rhythm, and a last line that repeats the post as a moral. A hook stays when it states the moment ("20 hard stops down Mill Hill"). Rewrite it when it withholds the moment ("Wait until you see what happens on Mill Hill").
+- **Marketing filler:** `rules.json` > `voice.banned` holds a short default list (revolutionary, game-changer, thrilled to announce, next level and similar). The README's own list adds to it.
 
 | Before | After |
 |---|---|
-| Unlock the ultimate Oblivion multiplayer experience with our seamless server tools! | Host your own Oblivion Remastered server. We go from the .NET runtime to the first join. |
-| Ready to take your Oblivion adventures to the next level? Dive in! | Oblivion Remastered, with your friends in Cyrodiil too. Here's how to host it. |
-| We're thrilled to announce our revolutionary admin panel. | As a host you'll live in the admin panel. Here's a walk through it. |
+| Take your braking to the next level with our groundbreaking pad swap guide! | Swap the disc brake pads on a Trail 2 in 5 steps. You need a 5 mm hex key and pliers. |
+| We're thrilled to announce our revolutionary new tutorial. | New guide: replacing disc brake pads, from pulling the pin to bedding the pads in. |
+
+**Rewrite pass** (`rewrite-pass`). If the README names a rewrite or style pass, run it on every `title`, `text`, `firstComment` and `thread` post, and on the prose in `why` and `notes`, before you write copy.json. Save the final text only, with no change list. The pass never adds a fact: fix a vague line with a fact from the fact list, or cut the line. Leave `hashtags`, `tags`, links, handles, product names, chapter lines and words quoted from the video as they are.
 
 ## Read the video first
 
@@ -56,40 +64,36 @@ Banned (full list in `rules.json` > `voice.banned`): revolutionary, industry-lea
 2. Make a fact list:
    - what the viewer has at the end
    - the steps, in order
-   - the screen names (admin panel, launcher)
+   - the names of screens, parts and tools
    - every version, number and requirement shown
    - the runtime
 
-   Only facts on this list can appear in copy (`honest-promise`).
+   Only facts on this list or in knowledge can appear in copy (`honest-promise`).
 3. Note the exact words the speaker uses. They are the words TikTok and YouTube hear, so reuse them in the caption (`say-it-on-screen`).
 4. Chapters come from transcript timestamps (`yt-chapters`). Rules: 00:00 first, at least 3, ascending, each at least 10 seconds (**official**, `yt-chapters-help`). If the timings are unreliable, leave a placeholder and say so in `notes`.
 5. Read the existing `/publish/copy.json`. Merge into it, copy the `requestId`, and keep the platforms the request didn't name.
 
-## OB:MP facts and links (`known-links-only`)
+## Facts and links (`known-links-only`)
 
-The video tells you what this one post is about. Everything around it (what OB:MP is, what it needs, where the docs live, the Discord invite, our handles) comes from the team's content kit, never from memory or a plausible guess.
+The video tells you what this one post is about. Everything around it (what the product is, what it needs, where the docs live, the handles) comes from knowledge, never from memory or a plausible guess.
 
-1. Before writing, load the `obmp-readym-content-kit` skill (installed globally at `~/.claude/skills/obmp-readym-content-kit/SKILL.md`, and for Codex at `~/.codex/skills/obmp-readym-content-kit/SKILL.md`; read the file if the skill isn't listed). Then read `/publish/knowledge/README.md` for anything specific to this project. Order of authority: newest Msk instruction, then live pages, then this project's knowledge folder, then the kit. Say in `notes` when sources disagree.
-2. The kit's section 0 rules apply to every post. The ones that change post copy:
-   - Game version: don't write "Steam only" or "Steam copy required". Xbox and Game Pass are only "support in progress, no date", never "coming soon".
-   - Calling OB:MP a "mod" or "multiplayer mod" is fine. ReadyM is the platform.
-   - No non-affiliation line on any platform, YouTube included, until Msk explicitly asks for it (Msk, Nov 9).
-   - US English, literal claims, metrics with their date and never summed, signups are not players.
-   - Nothing from the kit's "Never claim" list (section 9) or "Internal only" list (section 10). Unreleased versions, dates and partner terms stay out.
-3. Use names the way the kit writes them: OB:MP, ReadyM, ReadyM Launcher, The Elder Scrolls IV: Oblivion Remastered.
-4. Links, invites, @handles, versions, prices and requirements come only from the kit, the knowledge folder or the video. Copy them character for character, and prefer the deepest page that fits (the Installation page for a hosting video, not a docs root). The kit's section 15 says to refresh versions from the releases page before publishing; if you can't, say so in `notes`.
-5. If a link the request asks for is not in those sources, leave it out. Do not write a placeholder like `[docs link]` into `text` or `firstComment`, because the panel posts exactly what is in copy.json. Say which link is missing in `why` and in `notes`.
-6. Facts from the kit are background. Copy about this video still only promises what this video shows (`honest-promise`).
+1. Links, invites, @handles, versions, prices and requirements come only from the knowledge README, the skills it names, the request or the video. Copy them character for character, and prefer the deepest page that fits (the page for this task, not a site root).
+2. Write names the way the README writes them.
+3. If a link the request asks for is not in those sources, leave it out. Do not write a placeholder like `[docs link]` into `text` or `firstComment`, because the panel posts exactly what is in copy.json. Say which link is missing in `why` and in `notes`.
+4. Nothing from the README's "never claim" list, in any field.
+5. Facts from knowledge are background. Copy about this video still only promises what this video shows (`honest-promise`).
+6. When sources disagree, the newest dated line in the README wins. Say so in `notes`.
+7. One CTA per post, with a link that works today (`valid-cta`). List in `notes` every link the user should check before posting.
 
 ## Panel parameters
 
-Defaults when a parameter is missing: tone plain, length medium, cta watch, emoji none, humanize 2. A parameter never overrides a hard rule: honesty, limits, dashes, banned words.
+Defaults when a parameter is missing: tone plain, length medium, cta watch, emoji none, humanize 2. A parameter never overrides a hard rule (honesty, platform limits) or the README's "never claim" list.
 
 - **tone**:
   - `plain`: what it is and what you get.
-  - `hype`: the energy comes from facts and verbs, not adjectives. Allows one caps word in a YouTube title (gaming caps were positive, correlational, `air-titles-2026`) and one "!".
-  - `dry-funny`: one understated line per option about the game or modding life, never at the viewer's expense. Search words still lead on YouTube.
-  - `technical`: name the parts exactly as the video shows them (runtime version, ports, config files, admin pages).
+  - `hype`: the energy comes from facts and verbs, not adjectives. Allows one caps word in a YouTube title (positive in the gaming split of `air-titles-2026`, correlational) and one "!".
+  - `dry-funny`: one understated line per option about the subject or the work behind it, never at the viewer's expense. Search words still lead on YouTube.
+  - `technical`: name the parts exactly as the video shows them (versions, part numbers, settings, file names).
 - **length**:
   - `short`: YouTube gets 2 lines plus chapters and links. TikTok under 30 words. Reels about 30 words. X one sentence. LinkedIn under 600 chars.
   - `medium`: YouTube gets 3 short paragraphs plus chapters and links. TikTok 30 to 60 words. Reels and Facebook 30 to 90 words. LinkedIn 600 to 1,300 chars.
@@ -98,9 +102,9 @@ Defaults when a parameter is missing: tone plain, length medium, cta watch, emoj
   - `none`: end on the last fact.
   - `watch`: point to the full video, or on YouTube to the next video.
   - `comment`: one real question a viewer can answer from experience. Never "comment YES" or "agree?" (`no-engagement-bait`).
-  - `follow`: give a true reason ("we post every OB:MP update here").
-  - `link`: put the link where links work for that platform (see the playbook) (`links-out-of-body`).
-  - `discord`: our Discord, with a true reason. Use the invite from the content kit (https://discord.gg/obmp for OB:MP; help goes to #support). Never invent invites or channel names.
+  - `follow`: give a true reason ("we post every repair guide here").
+  - `link`: the link from the request or from knowledge, placed where links work for that platform (see the playbook) (`links-out-of-body`).
+  - `community`: the brand's community (a Discord server, forum or newsletter), with a true reason and the invite or link from knowledge. Never invent invites or channel names.
 - **keywords**: must-include search words.
   - Put the first one inside the first ~50 chars of the YouTube title, in the first line of every description and caption, and in the advice for on-screen text.
   - Use each keyword once in a title and once or twice in a body. Variants and misspellings go in YouTube `tags`.
@@ -109,20 +113,16 @@ Defaults when a parameter is missing: tone plain, length medium, cta watch, emoj
   - `light`: at most 1 per option, at a line end, never in a YouTube title.
   - `some`: up to 3 on TikTok, Instagram and Threads; still at most 1 on YouTube, LinkedIn and X. X counts each emoji as 2 chars (**official**, `x-counting-chars`).
 - **hashtags** (count): a target, capped by each platform's max in `rules.json`. 0 is valid.
-  - Order: most specific first (#OBMP, #OblivionRemastered), then at most one broad tag (#PCGaming).
+  - Order: most specific first (the product, the task), then at most one broad tag.
   - Never #fyp, #viral, #reels or #explore.
   - Never inline in `text` (`hashtags-few-relevant`).
-- **language** (BCP-47): write natively, don't translate English idioms. Keep proper names as they are: Oblivion Remastered, OB:MP, ReadyM, WukongMP. Use the local search words for multiplayer and server. For non-English Bluesky posts, add a `notes` line telling the user to set the post language.
+- **language** (BCP-47): write natively, don't translate English idioms. Keep the proper names from knowledge as they are. Use the local search words for the subject. For non-English Bluesky posts, add a `notes` line telling the user to set the post language.
 - **humanize**:
   - `0`: clean neutral copy.
-  - `1`: house voice: contractions, plain verbs.
-  - `2`: plus "we" and one detail only the people who made it would know, taken from the transcript.
-  - `3`: plus one honest founder aside (what was hard, what we changed), uneven sentence lengths, fragments are fine. Never fake typos or invent stories.
-- **audience**:
-  - `server-hosts`: requirements and steps up front.
-  - `players`: the outcome, playing with friends, light on setup.
-  - `modders`: what's under the hood and the tooling.
-  - `industry`: what ReadyM does for single-player games, for LinkedIn.
+  - `1`: plain voice: contractions, plain verbs.
+  - `2`: plus the first person from knowledge ("we" or "I") and one detail only the people who made it would know, taken from the transcript.
+  - `3`: plus one honest aside (what was hard, what changed), uneven sentence lengths, fragments are fine. Never fake typos or invent stories.
+- **audience**: free text. It sets the reader's vocabulary and what goes up front. Beginners get the outcome and the steps. Experts get exact names and how it works inside. Buyers get the price and what they need. Industry peers get what was built and why, on LinkedIn first.
 - **notes**: the user's free text. Follow it. If it conflicts with a hard rule, follow the rule and explain why in that platform's `notes`.
 
 ## The three-angle method (`three-real-angles`)
@@ -130,35 +130,30 @@ Defaults when a parameter is missing: tone plain, length medium, cta watch, emoj
 Write exactly 3 options per platform. Each option takes its angle from a different family, so the user gets a real choice and A/B variants that differ in a meaningful way (`yt-ab-test-help`):
 
 - **Search** family: `outcome`, `obstacle` or `speed`. Built from the keywords. Usually option 1 on YouTube, LinkedIn and Bluesky.
-- **Browse** family: `impossible-moment`, `access`, `proof`, `play-together` or `curiosity`. Hook first. Usually option 1 on TikTok, Reels and X. Prefer `impossible-moment` when the clip shows players doing something the single-player game never allowed (`impossible-moment`), and `access` for open beta, batch, server or release posts (`access-moments`).
-- **Voice** family: `builder` or `candid-build`. "We made this, here's how to use it", or "we got this working, here's what's still rough". In the house voice, as specific as the other two.
+- **Browse** family: `moment`, `access`, `proof` or `curiosity`. Hook first. Usually option 1 on TikTok, Reels and X. Prefer `moment` when the clip has one striking moment (`moment-first`), and `access` for a launch, an opening or a deadline (`access-moments`, **unverified**).
+- **Voice** family: `builder` or `candid-build`. "We made this, here's how to use it", or "we got this working, here's what's still rough". As specific as the other two, and `candid-build` only when the README's voice allows candor.
 
 Put the angle name in `angle`. Write `why` as one line citing rule ids, and put those ids in `rules`. `speed` and `obstacle` need proof in the transcript. Angle definitions and examples are in `rules.json` > `angles`.
 
 ## Per-platform playbook
 
-Panel hard limits count `text` plus the appended hashtags. `rules.json` > `platforms` holds the numbers, plus `wins` and `evidence` from `readym-social-voice`.
+Panel hard limits count `text` plus the appended hashtags. `rules.json` > `platforms` holds the numbers.
 
-**What wins, by platform** (**measured** 2026-11-09 on ours and the three comparables unless marked; see `references.md` > Social performance):
-- **YouTube long-form** (`yt-proof-asset`): a milestone or launch-day "one evening on a server", 3 to 5 minutes, chaptered. KCD:MP's got 161,210 views and press embedded it. Dated explainers are what press embeds, never TikTok.
-- **Shorts:** one social moment in 15 to 40 seconds, titled with the moment, the game and "multiplayer". Our organic winners got 7 to 9% like rates; SDK explainers and POV clips got 223 to 1,874 views.
-- **TikTok:** impossible moment, "it works now", lore lines and access posts with real numbers. Our access posts got 1.0 to 1.7% share rates against about 0.01% on teasers (`access-moments`). Keep cuts under about 45 seconds (`short-cut-length`).
-- **X:** a native clip with 1 to 3 candid first-person sentences, a before and after number, and a tease of the next video. Reach comes from reposts by aggregators and creators, so draft the pitch in `notes`; Msk sends it.
-- **Instagram, Facebook, LinkedIn, Threads, Bluesky:** no data of ours (login walls). Follow the vendor-backed rules below; on LinkedIn, post from Msk's profile with a dated milestone (unverified).
+Short-form and feed posts open on the one concrete moment the clip shows, not a feature list (`moment-first`). Don't reuse the same date, version or "Part x/y" line across posts (`no-date-template`).
 
 **YouTube long-form**
-- **Limits:** title 100, description 5,000 (**official**, `yt-edit-settings-help`). There is no official truncation length. Keep the game, the keyword and the payoff in the first ~50 chars (`yt-front-load`).
+- **Limits:** title 100, description 5,000 (**official**, `yt-edit-settings-help`). There is no official truncation length. Keep the subject, the keyword and the payoff in the first ~50 chars (`yt-front-load`).
 - **Before truncation:** the title, the first 1 to 2 description lines, and up to 3 hashtags shown above the title (**official**, `yt-description-tips`, `yt-hashtags-help`).
 - **Structure:**
   - line 1: what you get, with the keywords
-  - line 2: who we are, in one line
+  - line 2: who made it, in one line (`original-voice`)
   - what you need
   - chapters
   - links
-- **Hashtags and tags:** 2 to 3 hashtags. `tags` holds 5 to 10 variants and misspellings ("oblivion remaster", "obmp"). Tags play a minimal role (**official**, `yt-tags-light`, `yt-tags-help`).
-- **Freshness:** a version or year tag is common in ranked server tutorials (**observed**, `ex-yt-kazzanski-version`, `ex-yt-rockuzza-howto`). Use one only when it is true and on screen (`freshness-tag`).
-- **CTA and first comment:** CTA after line 2. `firstComment` is the pinned comment: the docs link plus a real support prompt (`reply-and-pin`).
-- **Avoid:** question-ending titles, stacked brackets (least effective in gaming, `air-titles-2026`), keyword lists in the description, emoji in titles.
+- **Hashtags and tags:** 2 to 3 hashtags. `tags` holds 5 to 10 name variants and misspellings. Tags play a minimal role (**official**, `yt-tags-light`, `yt-tags-help`).
+- **Freshness:** a version or year tag is common in ranked tutorials (**observed**, one niche, `ex-yt-rockuzza-howto`, `ex-yt-migrate-save`). Use one only when it is true and on screen (`freshness-tag`).
+- **CTA and first comment:** CTA after line 2. `firstComment` is the pinned comment: the main link plus a real support prompt (`reply-and-pin`).
+- **Avoid:** question-ending titles, stacked brackets (least effective in the gaming split of `air-titles-2026`), keyword lists in the description, emoji in titles.
 
 **YouTube Shorts**
 - **Title:** same 100 limit, but it sits over the video. Keep it short and hook first.
@@ -189,7 +184,7 @@ Panel hard limits count `text` plus the appended hashtags. `rules.json` > `platf
 
 **LinkedIn**
 - **Limits:** 3,000 chars (**official**, `li-post-help`). The fold is about 140 chars on mobile (unverified), so line 1 must stand alone.
-- **Angle:** builder or industry. Name the thing plainly, for example "OB:MP, our multiplayer mod for Oblivion Remastered", because the feed model reads topic (`li-feed-eng-2026`).
+- **Angle:** builder or industry. Name the thing plainly, with its category, for example "the Trail 2, our steel trail bike", because the feed model reads topic (`li-feed-eng-2026`).
 - **Length:** video posts engaged at 4.2 to 4.5% at any length (**measured**, vendor, `socialinsider-captions-2026`).
 - **Hashtags:** 0 to 3. There is no official number.
 - **Links:** in `firstComment` by default. The studies conflict (`ordinal-li-links`).
@@ -198,7 +193,7 @@ Panel hard limits count `text` plus the appended hashtags. `rules.json` > `platf
 **X**
 - **Limits:** 280, or 25,000 on Premium. Every URL counts as 23 and every emoji as 2 (**official**, `x-counting-chars`).
 - **Structure:** the fact first, in one or two sentences, with the video uploaded natively. On long length, write 3 to 5 posts in `thread`, each one making sense alone.
-- **Links:** non-Premium link posts had 0% median engagement (**measured**, vendor, 18.8M posts, `buffer-x-links-2025`). X says links aren't deboosted (`x-bier-links-2025`). Keep links out of the post. X has no `firstComment` field, so put "reply to your post with the docs link" in `notes`.
+- **Links:** non-Premium link posts had 0% median engagement (**measured**, vendor, 18.8M posts, `buffer-x-links-2025`). X says links aren't deboosted (`x-bier-links-2025`). Keep links out of the post. X has no `firstComment` field, so put "reply to your post with the link" in `notes`.
 - **Hashtags:** 0 to 1 (`musk-hashtags-2024`).
 - **Avoid:** link-only posts (link cards show no headline, `techcrunch-x-link-cards-2023`), hashtag strings.
 
@@ -215,63 +210,66 @@ Panel hard limits count `text` plus the appended hashtags. `rules.json` > `platf
 
 ## Pre-flight checklist
 
-- [ ] The transcript was read, and every fact, number, version and time in the copy is in the video.
+- [ ] The knowledge README was read, with every file and skill it names. `Example:` lines were ignored.
+- [ ] The transcript was read, and every fact, number, version and time in the copy is in the video or in knowledge.
 - [ ] 3 options per platform, from 3 angle families, with `angle`, `why` and `rules` filled.
-- [ ] YouTube titles are at most 100 chars, with game plus keyword plus payoff in the first ~50, and no question at the end.
+- [ ] YouTube titles are at most 100 chars, with subject plus keyword plus payoff in the first ~50, and no question at the end.
 - [ ] `text` plus hashtags is under the panel limit. On X, URLs count 23 and emoji count 2.
 - [ ] No hashtags inside `text`. Hashtag count is within both the platform max and the panel parameter.
 - [ ] `tags` only on YouTube, each at most 100 chars, 500 in total. `firstComment` only on YouTube, Instagram, Facebook, LinkedIn and Threads. `thread` only on X, Threads and Bluesky, and only when length needs it.
-- [ ] The `obmp-readym-content-kit` skill and `/publish/knowledge` were read. Every link, invite, handle, version and product fact is copied from there or from the video. Missing links are left out and named in `notes`, never guessed or left as placeholders.
-- [ ] Kit section 0 holds: no "Steam only" gating, no Xbox "coming soon", no Never claim or Internal only items. No non-affiliation line on any platform.
-- [ ] Links follow the playbook for each platform.
-- [ ] Zero U+2014 and U+2013 characters. Zero banned words. At most one question opener per platform.
-- [ ] Short-form and feed options open on the moment, not a feature list. The full game name and "multiplayer" are in the title or first line. One true candor line where it fits. No date, build or "Part x/y" template.
-- [ ] One CTA per post, and every link is one Msk can check resolves today.
+- [ ] Every link, invite, handle, version and product fact is copied from knowledge, the request or the video. Missing links are left out and named in `notes`, never guessed or left as placeholders.
+- [ ] Nothing from the README's "never claim" list. Its words, punctuation and naming rules hold in every field.
+- [ ] Links follow the playbook for each platform. One CTA per post.
+- [ ] No word from `voice.banned` or the README's list. At most one question opener per platform.
+- [ ] Short-form and feed options open on the moment, not a feature list. The searched name is in the title or first line. No reused date, version or "Part x/y" line.
+- [ ] The README's rewrite pass, if it names one, ran on every `title`, `text`, `firstComment` and `thread` post, and on `why` and `notes`. No fact was added that isn't on the fact list (`rewrite-pass`).
 - [ ] Merged into copy.json, `requestId` copied, valid JSON, 2-space indent, trailing newline.
-- [ ] Read each option aloud. Would one of us post it from our own account?
+- [ ] Read each option aloud. Would the brand post it from its own account?
 
-## Worked examples: OB:MP server tutorial
+## Worked example: a repair tutorial
 
-The facts used here (the .NET runtime, the admin panel, joining from the launcher) come from the brief. Check each one against the transcript before reusing anything. Links come from the content kit (`known-links-only`).
+Fernhollow Bikes and its Trail 2 are made up. The facts used here (a 5 mm hex key, the retaining pin, FP-22 pads, 20 stops to bed the pads in) stand in for a fact list built from a transcript, and the links stand in for the README's "Links and handles" section (`known-links-only`).
 
-**YouTube, angle `outcome`** (rules: `yt-front-load`, `search-words-first`, `honest-promise`, `yt-chapters`, `known-links-only`)
+**YouTube, angle `outcome`** (rules: `yt-front-load`, `search-words-first`, `how-to-for-search`, `honest-promise`, `yt-chapters`, `known-links-only`)
 
-Title (66 chars): `Host Your Own Oblivion Remastered Multiplayer Server | OB:MP Guide`
+Title (54 chars): `How to Replace Disc Brake Pads on a Fernhollow Trail 2`
 
 ```
-How to host your own OB:MP server for Oblivion Remastered: install the .NET 10 runtime, start the server, set it up in the admin panel, then join from the ReadyM Launcher.
+How to replace the disc brake pads on a Fernhollow Trail 2: take the wheel off, pull the retaining pin, slide the old pads out, push the pistons back, fit the new pads, then bed them in with 20 stops.
 
-We build OB:MP at ReadyM. This is the setup we run ourselves, start to finish.
+We build the Trail 2 at Fernhollow. This is how our workshop does the job, start to finish.
+
+You need a 5 mm hex key, needle-nose pliers and a set of FP-22 pads.
 
 Chapters
 00:00 What you need
-[mm:ss from transcript] Install the .NET runtime
-[mm:ss from transcript] Start the server
-[mm:ss from transcript] Admin panel walkthrough
-[mm:ss from transcript] Join from the launcher
+[mm:ss from transcript] Wheel off
+[mm:ss from transcript] Pull the pin, old pads out
+[mm:ss from transcript] Push the pistons back
+[mm:ss from transcript] New pads in
+[mm:ss from transcript] Bed them in
 
-Server guide: https://docs.ready.mp/oblivion-mp/docs/Server/installation
-ReadyM Launcher: https://portal.ready.mp
-Discord: https://discord.gg/obmp
+Parts list: https://fernhollow.example/trail-2/brake-pads
+Manual: https://fernhollow.example/trail-2/manual
 ```
 
-- hashtags: `#OblivionRemastered`, `#OBMP`, `#OblivionMultiplayer`
-- tags: oblivion remastered multiplayer, oblivion remastered server, obmp, oblivionmp, oblivion multiplayer mod, oblivion remaster dedicated server
-- firstComment: `Stuck on a step? Post the step and the error you see, and we'll help. Server guide: https://docs.ready.mp/oblivion-mp/docs/Server/installation`
-- The other two options: `builder` ("We Built Oblivion Multiplayer. Here's How to Host It", 52 chars) and `proof` (an admin panel tour title).
+- hashtags: `#FernhollowTrail2`, `#DiscBrakePads`, `#BikeRepair`
+- tags: replace disc brake pads, disc brake pad replacement, fernhollow trail 2, fern hollow trail 2, bike brake pads, fp-22 brake pads
+- firstComment: `Stuck on a step? Tell us which one and what you see, and we'll help. Parts list: https://fernhollow.example/trail-2/brake-pads`
+- The other two options: `builder` ("We Build the Trail 2. Here's How We Change Its Brake Pads", 57 chars) and `proof` ("Worn Brake Pads vs New, on the Same Hill").
 
-**TikTok, angle `play-together`** (rules: `caption-length-fit`, `say-it-on-screen`, `hashtags-few-relevant`)
+**TikTok, angle `moment`** (rules: `moment-first`, `caption-length-fit`, `say-it-on-screen`, `hashtags-few-relevant`)
 
 ```
-Your own Oblivion Remastered multiplayer server. Install .NET 10, start the server, set it up in the admin panel, join from the ReadyM Launcher. Full walkthrough on our YouTube.
+20 hard stops down Mill Hill to bed in new disc brake pads. Before that: wheel off, pin out, pistons back, pads in. Full walkthrough on our YouTube.
 ```
 
-That is 27 words. hashtags: `#OblivionRemastered`, `#OBMP`, `#PCGaming`. In `notes`, tell the user to keep "Oblivion Remastered multiplayer" in the on-screen text and the voiceover.
+That is 28 words. hashtags: `#DiscBrakePads`, `#FernhollowTrail2`, `#BikeRepair`. In `notes`, tell the user to keep "disc brake pads" in the on-screen text and the voiceover.
 
 **X, angle `builder`** (rules: `links-out-of-body`, `specific-over-generic`, `house-voice`)
 
 ```
-We made a full walkthrough for hosting your own OB:MP server for Oblivion Remastered: .NET runtime, admin panel, then the launcher to join. Video below. Docs are in the reply.
+We filmed how our workshop replaces the disc brake pads on a Trail 2: wheel off, pin out, pistons back, new pads in, then 20 stops to bed them in. Video below. Parts list is in the reply.
 ```
 
-That is 175 chars, with no hashtags and the video uploaded natively. `notes`: "Reply to your own post with the docs link; X has no first comment field."
+That is 187 chars, with no hashtags and the video uploaded natively. `notes`: "Reply to your own post with the parts list link; X has no first comment field."

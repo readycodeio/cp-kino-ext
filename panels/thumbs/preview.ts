@@ -1,9 +1,13 @@
 // Interactive preview: click to select, drag to move with snapping, corner handle to resize,
 // arrow keys to nudge. Element boxes are measured from the rendered art ([data-el] in ThumbArt).
+// Locked elements are drawn but cannot be picked, moved or deleted here: select them in the layer list.
 import { createElement as h, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Thumbnail } from '@remotion/player'
 import { ThumbArt } from '../../thumbs/ThumbArt'
-import { PRESETS, anchorXY, flatten, mapEl, parentOf, removeEl, type Design, type El, type Rect, type Zone } from '../../thumbs/model'
+import { PRESETS, anchorXY, findEl, flatten, mapEl, parentOf, removeEl, type Design, type El, type Rect, type Zone } from '../../thumbs/model'
+import type { Brand } from '../../thumbs/ui/brand'
+import { modKey } from '../platform'
+import { useFontTick } from './hooks'
 
 export type BoxMap = Record<string, Rect>
 export type OverlayMode = string // 'safe' | 'off' | a zone group name
@@ -11,6 +15,7 @@ export type OverlayMode = string // 'safe' | 'off' | a zone group name
 const SNAP = 6 // screen px
 const ACCENT = '#ff8a1f'
 const GUIDE_COLOR = '#ff4fd8'
+const CHANGED_COLOR = '#4ade80'
 const TEXTUAL = new Set(['headline', 'text', 'badge', 'card'])
 const r1 = (n: number) => Math.round(n * 10) / 10
 const r2 = (n: number) => Math.round(n * 100) / 100
@@ -26,6 +31,8 @@ export const scaleEl = (e: El, s: number): El => {
 			return { ...e, w, size: Math.max(8, Math.round(e.size * s)) } as El
 		case 'image':
 			return { ...e, w, h: e.h ? r2(e.h * s) : e.h }
+		case 'shape':
+			return { ...e, w, h: Math.min(200, Math.max(0.2, r2(e.h * s))) }
 		case 'stack':
 			return { ...e, w, gap: r2(e.gap * s), children: e.children.map(c => scaleEl(c, s)) }
 		default:
@@ -48,6 +55,7 @@ type Drag = {
 type Props = {
 	design: Design
 	assets: Record<string, string | undefined>
+	brand: Brand
 	width: number
 	height: number
 	safe: Rect
@@ -57,18 +65,28 @@ type Props = {
 	setSel: (id: string | null) => void
 	onChange: (fn: (d: Design) => Design) => void
 	boxesRef: { current: BoxMap }
+	/** Elements to outline because someone else just changed them. */
+	changed?: string[]
+	onDuplicate?: (id: string) => void
 }
 
 const inside = (b: Rect, x: number, y: number, pad = 3) => x >= b.x - pad && x <= b.x + b.w + pad && y >= b.y - pad && y <= b.y + b.h + pad
 const touches = (a: Rect, b: Rect) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 1 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 1
 
 export const Preview = (props: Props) => {
-	const { design, assets, width, height, safe, zones, overlay, sel, setSel, onChange, boxesRef } = props
+	const { design, assets, brand, width, height, safe, zones, overlay, sel, setSel, onChange, boxesRef } = props
 	const p = PRESETS[design.preset]
+	const fontTick = useFontTick()
 	const k = width / p.w
 	const ref = useRef<HTMLDivElement>(null)
 	const drag = useRef<Drag | null>(null)
-	const [live, setLive] = useState<{ id: string; el: El } | null>(null)
+	const [live, setLiveState] = useState<{ id: string; el: El } | null>(null)
+	// pointer events can arrive faster than renders: the drop reads the latest position from here
+	const liveRef = useRef<{ id: string; el: El } | null>(null)
+	const setLive = (next: { id: string; el: El } | null) => {
+		liveRef.current = next
+		setLiveState(next)
+	}
 	const [guides, setGuides] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] })
 	const [hover, setHover] = useState<string | null>(null)
 	const [boxes, setBoxes] = useState<BoxMap>({})
@@ -102,9 +120,10 @@ export const Preview = (props: Props) => {
 			clearTimeout(t1)
 			clearTimeout(t2)
 		}
-	}, [shownKey])
+	}, [shownKey, brand, fontTick])
 
 	const tops = design.elements.filter(e => e.visible !== false)
+	const isLocked = (id: string | null) => !!id && (findEl(design.elements, id)?.locked === true || parentOf(design.elements, id)?.locked === true)
 	const topOf = (id: string | null) => (id ? (parentOf(design.elements, id)?.id ?? id) : null)
 	const selTop = topOf(sel)
 
@@ -113,9 +132,9 @@ export const Preview = (props: Props) => {
 		for (let i = tops.length - 1; i >= 0; i--) {
 			const e = tops[i]
 			const b = boxes[e.id]
-			if (!b || !inside(b, x, y)) continue
+			if (e.locked || !b || !inside(b, x, y)) continue
 			if (e.type === 'stack' && selTop === e.id) {
-				const child = e.children.find(c => c.visible !== false && boxes[c.id] && inside(boxes[c.id], x, y, 0))
+				const child = e.children.find(c => c.visible !== false && !c.locked && boxes[c.id] && inside(boxes[c.id], x, y, 0))
 				if (child) return { top: e, pick: child.id }
 			}
 			return { top: e, pick: e.id }
@@ -149,7 +168,7 @@ export const Preview = (props: Props) => {
 		ev.preventDefault()
 		const e = design.elements.find(x => x.id === selTop)
 		const box = e && boxes[e.id]
-		if (!e || !box) return
+		if (!e || !box || e.locked) return
 		const { ax, ay } = anchorXY(e.anchor)
 		const anchor = { x: (e.x / 100) * width, y: (e.y / 100) * height }
 		const corner = { x: ax === 100 ? box.x : box.x + box.w, y: ay === 100 ? box.y : box.y + box.h }
@@ -224,8 +243,9 @@ export const Preview = (props: Props) => {
 		const g = drag.current
 		drag.current = null
 		setGuides({ x: [], y: [] })
-		if (g?.moved && live) {
-			const el = live.el
+		const dropped = liveRef.current
+		if (g?.moved && dropped) {
+			const el = dropped.el
 			onChange(d => ({ ...d, elements: mapEl(d.elements, el.id, () => el) }))
 		}
 		setLive(null)
@@ -233,19 +253,25 @@ export const Preview = (props: Props) => {
 
 	const onKeyDown = (ev: any) => {
 		if (!sel) return
-		const step = ev.shiftKey ? 2 : 0.5
+		// Shift for big steps, Alt for fine ones
+		const step = ev.shiftKey ? 2 : ev.altKey ? 0.1 : 0.5
 		const moves: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }
 		const m = moves[ev.key]
 		if (m && selTop) {
 			ev.preventDefault()
+			if (isLocked(selTop)) return
 			onChange(d => ({ ...d, elements: mapEl(d.elements, selTop, e => ({ ...e, x: r1(e.x + m[0]), y: r1(e.y + m[1]) }) as El) }))
 		} else if (ev.key === 'Escape') {
 			setSel(selTop !== sel ? selTop : null)
 		} else if (ev.key === 'Delete' || ev.key === 'Backspace') {
 			ev.preventDefault()
+			if (isLocked(sel)) return
 			const id = sel
 			onChange(d => ({ ...d, elements: removeEl(d.elements, id) }))
 			setSel(null)
+		} else if ((ev.key === 'd' || ev.key === 'D') && modKey(ev) && props.onDuplicate) {
+			ev.preventDefault()
+			props.onDuplicate(sel)
 		}
 	}
 
@@ -273,7 +299,7 @@ export const Preview = (props: Props) => {
 	const topBox = selTop ? boxes[selTop] : null
 	const topEl = selTop ? design.elements.find(e => e.id === selTop) : null
 	const handle = (() => {
-		if (!topEl || !topBox || drag.current?.kind === 'move') return null
+		if (!topEl || !topBox || topEl.locked || drag.current?.kind === 'move') return null
 		const { ax, ay } = anchorXY(topEl.anchor)
 		return { x: ax === 100 ? topBox.x : topBox.x + topBox.w, y: ay === 100 ? topBox.y : topBox.y + topBox.h }
 	})()
@@ -298,6 +324,7 @@ export const Preview = (props: Props) => {
 		overlay !== 'off' ? h('line', { key: 'cx', x1: width / 2, x2: width / 2, y1: 0, y2: height, stroke: 'rgba(255,255,255,.22)', strokeDasharray: '2 5' }) : null,
 		overlay !== 'off' ? h('line', { key: 'cy', y1: height / 2, y2: height / 2, x1: 0, x2: width, stroke: 'rgba(255,255,255,.14)', strokeDasharray: '2 5' }) : null,
 		...flags.map(f => rect(`f${f.id}`, f.b, { stroke: f.color, strokeWidth: 1.2, strokeDasharray: '3 3' })),
+		...(props.changed ?? []).filter(id => boxes[id]).map(id => rect(`ch${id}`, { x: boxes[id].x - 3, y: boxes[id].y - 3, w: boxes[id].w + 6, h: boxes[id].h + 6 }, { stroke: CHANGED_COLOR, strokeWidth: 1.5, strokeDasharray: '6 4', className: 'kino-thumbs-pulse' })),
 		hover && hover !== selTop && boxes[hover] && !live ? rect('hover', boxes[hover], { stroke: 'rgba(255,255,255,.55)', strokeWidth: 1 }) : null,
 		topBox && sel !== selTop ? rect('parent', topBox, { stroke: ACCENT, strokeOpacity: 0.5, strokeWidth: 1, strokeDasharray: '4 3' }) : null,
 		selBox ? rect('sel', selBox, { stroke: ACCENT, strokeWidth: 1.5 }) : null,
@@ -320,7 +347,7 @@ export const Preview = (props: Props) => {
 			onDragStart: (ev: any) => ev.preventDefault(),
 			style: { position: 'relative', width, height, background: '#000', boxShadow: '0 0 0 1px rgba(var(--kp-ink),0.08)', outline: 'none', userSelect: 'none', touchAction: 'none', cursor: hover || live ? 'move' : 'default', flex: 'none' },
 		},
-		h(Thumbnail, { component: ThumbArt as any, inputProps: { design: shown, assets }, compositionWidth: p.w, compositionHeight: p.h, frameToDisplay: 0, durationInFrames: 1, fps: 30, style: { width, height, pointerEvents: 'none' } }),
+		h(Thumbnail, { component: ThumbArt as any, inputProps: { design: shown, assets, brand }, compositionWidth: p.w, compositionHeight: p.h, frameToDisplay: 0, durationInFrames: 1, fps: 30, style: { width, height, pointerEvents: 'none' } }),
 		svg,
 		handle
 			? h('div', {

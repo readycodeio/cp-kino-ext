@@ -3,7 +3,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { PROJECTS_DIR } from "../bridge/platform.mjs";
+import { MOUNTS_DIR } from "../bridge/platform.mjs";
 
 export const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const PANELS_SRC = path.join(REPO, "panels");
@@ -14,8 +14,11 @@ const SKIP = name => name === ".DS_Store" || name === "Thumbs.db" || /\.bak/.tes
 // Project files that hold the user's own work. Never overwritten by install or pulled back into the repo.
 export const isDataFile = rel => {
   const p = rel.split(path.sep).join("/");
-  return p === "thumbs/designs.json" || p.startsWith("publish/knowledge/") || p === "publish/plan.json" || p === "publish/copy.json";
+  return p === "thumbs/designs.json" || p === "thumbs/brand.json" || p.startsWith("publish/knowledge/") || p === "publish/plan.json" || p === "publish/plan.unreadable.json" || p === "publish/copy.json";
 };
+
+// Agent skills (rules and guidance). A project may tune them, so install only adds them; --update refreshes them.
+export const isSkillFile = rel => /^(thumbs|publish)\/skill\//.test(rel.split(path.sep).join("/"));
 
 export const flag = name => process.argv.includes(`--${name}`);
 export const positional = () => process.argv.slice(2).filter(arg => !arg.startsWith("--"));
@@ -25,7 +28,7 @@ export const resolveMount = arg => {
   if (!arg) throw new Error("Give a Kino project id (e.g. aBcD1234ef) or the project's folder path.");
   const looksLikePath = /[\\/]/.test(arg) || arg.startsWith(".") || arg.startsWith("~");
   const expanded = arg.startsWith("~") ? path.join(process.env.HOME ?? process.env.USERPROFILE ?? "", arg.slice(1)) : arg;
-  const mount = looksLikePath ? path.resolve(expanded) : path.join(PROJECTS_DIR, arg);
+  const mount = looksLikePath ? path.resolve(expanded) : path.join(MOUNTS_DIR, arg);
   if (!looksLikePath && !/^[A-Za-z0-9_-]{1,64}$/.test(arg)) throw new Error(`Not a Kino project id: ${arg}`);
   if (!fs.existsSync(mount) || !fs.statSync(mount).isDirectory()) {
     throw new Error(
@@ -33,6 +36,50 @@ export const resolveMount = arg => {
     );
   }
   return { id: path.basename(mount), mount, mounted: fs.existsSync(path.join(mount, ".kino-mount")) };
+};
+
+/** Every project Kino desktop has mounted: folders under MOUNTS_DIR that hold a .kino-mount folder. */
+export const mountedProjects = () => {
+  if (!fs.existsSync(MOUNTS_DIR)) return [];
+  return fs
+    .readdirSync(MOUNTS_DIR, { withFileTypes: true })
+    .filter(entry => entry.isDirectory() && /^[A-Za-z0-9_-]{1,64}$/.test(entry.name) && fs.existsSync(path.join(MOUNTS_DIR, entry.name, ".kino-mount")))
+    .map(entry => ({ id: entry.name, mount: path.join(MOUNTS_DIR, entry.name), mounted: true }));
+};
+
+/**
+ * Text of panels/project.ts for one project. Project files sync to the whole team, so this holds the
+ * project id only, never a path on this machine.
+ */
+export const projectTs = id =>
+  "// Written by `npm run install-panels` for the Kino project the panels are installed into.\n" +
+  "// Panels read the project id from the editor URL first and fall back to this value.\n" +
+  `export const PROJECT_ID = ${JSON.stringify(id)}\n` +
+  "// Always empty. Panels installed before this file stopped carrying a folder path still import it.\n" +
+  'export const MOUNT_HINT = ""\n';
+
+/**
+ * Install the panels into one project folder.
+ * - panels/ replaces older copies and panels/project.ts is written for this project.
+ * - Code the panels import from the project (thumbs/model.ts, ThumbArt.tsx, ...) is replaced too: a panel
+ *   and its model are one unit and must be the same version.
+ * - Skill files are added where missing, and refreshed only with update.
+ * - The user's own data files are added where missing and never overwritten.
+ * Returns the per-file results for report().
+ */
+export const installPanels = ({ id, mount }, { update = false, dryRun = false } = {}) => {
+  const panelResults = [];
+  for (const rel of walk(PANELS_SRC)) {
+    if (rel === GENERATED) continue;
+    panelResults.push([rel, copyFile(path.join(PANELS_SRC, rel), path.join(mount, "panels", rel), { overwrite: true, dryRun })]);
+  }
+  panelResults.push([GENERATED, writeIfChanged(path.join(mount, "panels", GENERATED), projectTs(id), { dryRun })]);
+  const projectResults = [];
+  for (const rel of walk(PROJECT_SRC)) {
+    const overwrite = isDataFile(rel) ? false : isSkillFile(rel) ? update : true;
+    projectResults.push([rel, copyFile(path.join(PROJECT_SRC, rel), path.join(mount, rel), { overwrite, dryRun })]);
+  }
+  return { panelResults, projectResults };
 };
 
 /** Every file under dir, as paths relative to dir. */

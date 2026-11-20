@@ -1,6 +1,7 @@
 @echo off
-rem Double-click to start the Kino bridge. Keep this window open while you use the panels;
-rem press Ctrl+C here to stop it.
+rem Double-click to run the Kino bridge in this window, with its log on screen. Keep the window open
+rem while you use the panels; Ctrl+C stops it. For a bridge that runs in the background and starts at
+rem sign-in, use setup.cmd instead.
 cd /d "%~dp0"
 where node >nul 2>nul
 if errorlevel 1 (

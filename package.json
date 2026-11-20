@@ -2,13 +2,16 @@
   "name": "cp-kino-ext",
   "version": "1.0.0",
   "private": true,
-  "description": "Kino panels (Terminal, YT Downloader, Voiceover, Thumbnails, Publish) and the local bridge they talk to. macOS and Windows 11.",
+  "description": "Custom panels for Kino (Terminal, YT Downloader, Voiceover, Thumbnails, Publish) and the local bridge they talk to. macOS, Windows 11 and Linux.",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=20.6"
   },
   "scripts": {
+    "setup": "node scripts/setup.mjs",
     "start": "node bridge/server.mjs",
+    "service": "node scripts/service.mjs",
     "doctor": "node scripts/doctor.mjs",
     "install-panels": "node scripts/install-panels.mjs",
     "pull-panels": "node scripts/pull-panels.mjs",

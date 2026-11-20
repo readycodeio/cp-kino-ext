@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 // .env.local to pick your own voice; with neither, the Voiceover panel starts on the first voice.
 export const DEFAULT_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || "";
 export const DEFAULT_MODEL_ID = process.env.ELEVENLABS_MODEL_ID || "eleven_v4";
-export const DEFAULT_OUTPUT_FORMAT = process.env.ELEVENLABS_OUTPUT_FORMAT || "mp3_44100_192"; // best MP3 below the Pro plan
+export const DEFAULT_OUTPUT_FORMAT = process.env.ELEVENLABS_OUTPUT_FORMAT || "mp3_44100_128"; // works on every plan, the free one included
 
 export const elevenlabs = new ElevenLabsClient();
 

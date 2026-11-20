@@ -5,9 +5,9 @@
 // Protocol: one JSON object per line. stdin {id, cmd, args}; stdout {id, ok: true, result} or
 // {id, ok: false, error}. Nothing else may be written to stdout.
 //
-// Requests use the API's snake_case fields (same as eleven_voice.py and its .json sidecars) and are
-// converted to the SDK's camelCase here. Output files follow eleven_voice.py naming:
-//   <output_dir>/YYYYmmdd-HHMMSS_<slug>_v<N>.<ext> plus a .json sidecar.
+// Requests use the API's snake_case fields, the same ones the .json sidecars store, and are converted
+// to the SDK's camelCase here. Output files are named
+//   <output_dir>/YYYYmmdd-HHMMSS_<slug>_v<N>.<ext> plus a .json sidecar with the exact request.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -41,7 +41,7 @@ const sdkVersion = (() => {
 
 const hasKey = Boolean(process.env.ELEVENLABS_API_KEY);
 let client = null;
-let defaults = { DEFAULT_VOICE_ID: process.env.ELEVENLABS_VOICE_ID || "", DEFAULT_MODEL_ID: "eleven_v4", DEFAULT_OUTPUT_FORMAT: "mp3_44100_192" };
+let defaults = { DEFAULT_VOICE_ID: process.env.ELEVENLABS_VOICE_ID || "", DEFAULT_MODEL_ID: "eleven_v4", DEFAULT_OUTPUT_FORMAT: "mp3_44100_128" };
 if (hasKey) {
   const mod = await import("./client.mjs");
   client = mod.elevenlabs;
@@ -61,7 +61,7 @@ const outputDir = () => {
 };
 
 const requireClient = () => {
-  if (!client) throw new Error(`No ElevenLabs API key in ${ENV_FILE}. Run \`npx -y @elevenlabs/cli@latest onboard connect --env-path .env.local\` in that folder.`);
+  if (!client) throw new Error(`No ElevenLabs API key in ${ENV_FILE}. The Voiceover panel shows how to connect your account.`);
   return client;
 };
 
@@ -75,9 +75,10 @@ const str = (value, max) => (typeof value === "string" && value.trim() ? value.s
 const plainDash = value => (typeof value === "string" ? value.replace(/\s*[\u2014\u2013]\s*/g, ", ") : value);
 const drop = object => Object.fromEntries(Object.entries(object).filter(([, value]) => value !== undefined));
 
+// Letters and digits of any script stay, so a take in Polish, Greek or Japanese still gets a readable name.
 const slugify = (text, n = 48) => {
-  const s = text.replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase();
-  return s.slice(0, n).replace(/-+$/, "") || "vo";
+  const s = text.normalize("NFC").replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").toLowerCase();
+  return [...s].slice(0, n).join("").replace(/-+$/, "") || "vo";
 };
 const stamp = date => {
   const p = n => String(n).padStart(2, "0");
@@ -117,8 +118,26 @@ const describeError = error => {
     error?.message ||
     String(error);
   const status = error?.statusCode ? ` (${error.statusCode})` : "";
-  return `${message}${status}`.replace(/sk_[A-Za-z0-9]{16,}/g, "sk_…").slice(0, 600);
+  return `${message}${status}`.replace(/sk_[A-Za-z0-9]{8,}/g, "sk_…").slice(0, 600);
 };
+
+/** The takes folder, created and checked before any credits are spent on audio that cannot be saved. */
+const writableOutputDir = () => {
+  const dir = outputDir();
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.accessSync(dir, fs.constants.W_OK);
+  } catch (error) {
+    throw new Error(`Cannot write to ${dir} (${error.code ?? error.message}). Pick another folder with Folder > Change.`);
+  }
+  return dir;
+};
+const saveError = (error, dir) =>
+  error?.code === "ENOSPC"
+    ? new Error(`The disk is full, so the take could not be saved to ${dir}. The credits for it were already used.`)
+    : error?.code === "EACCES" || error?.code === "EPERM"
+      ? new Error(`Cannot write to ${dir}, so the take could not be saved. The credits for it were already used.`)
+      : error;
 
 // ---------- snake_case request -> SDK request ----------
 const cleanRequest = args => {
@@ -335,8 +354,7 @@ const commands = {
     const body = cleanRequest(args);
     const takes = Math.min(Math.max(Math.floor(Number(args.takes) || 1), 1), MAX_TAKES);
     const voiceName = str(args.voice_name, 120) ?? null;
-    const dir = outputDir();
-    fs.mkdirSync(dir, { recursive: true });
+    const dir = writableOutputDir();
 
     const now = new Date();
     const plain = body.text.replace(/\[[^\]]*\]|<[^>]*>|\/[^/\s][^/]*\//g, " ");
@@ -356,7 +374,11 @@ const commands = {
         result = await convertOnce(body._voice_id, toSdk(body, seed));
       }
       const file = uniquePath(dir, `${stem}_v${index + 1}`, ext);
-      fs.writeFileSync(file, result.audio);
+      try {
+        fs.writeFileSync(file, result.audio);
+      } catch (error) {
+        throw saveError(error, dir);
+      }
       const duration = await probeDuration(file);
       const { _voice_id, _output_format, seed: _seed, ...request } = body;
       const meta = {
@@ -376,7 +398,11 @@ const commands = {
         take: index + 1,
         takes,
       };
-      fs.writeFileSync(file.replace(/\.\w+$/, ".json"), `${JSON.stringify(meta, null, 2)}\n`);
+      try {
+        fs.writeFileSync(file.replace(/\.\w+$/, ".json"), `${JSON.stringify(meta, null, 2)}\n`);
+      } catch (error) {
+        throw saveError(error, dir);
+      }
       return meta;
     };
 
@@ -404,7 +430,7 @@ lines.on("line", async line => {
   try {
     send({ id: message.id, ok: true, result: await command(message.args ?? {}) });
   } catch (error) {
-    send({ id: message.id, ok: false, error: describeError(error) });
+    send({ id: message.id, ok: false, error: describeError(error), status: error?.statusCode ?? null });
   }
 });
 lines.on("close", () => process.exit(0));

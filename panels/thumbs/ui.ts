@@ -1,4 +1,5 @@
 // Thumbnails panel: shared UI pieces, styled like the Terminal, YT Downloader and Voiceover panels.
+// The Publish panel imports from this file too: keep the exported names and props stable.
 import { createElement as h } from 'react'
 import type { ReactNode } from 'react'
 import type { Level } from './lib'
@@ -27,7 +28,8 @@ export const ensureCss = () => {
 		'.kino-thumbs-card:hover{border-color:rgba(var(--kp-ink),0.3)!important}' +
 		'.kino-thumbs-scroll::-webkit-scrollbar{width:8px;height:8px}.kino-thumbs-scroll::-webkit-scrollbar-thumb{background:rgba(var(--kp-ink),0.1);border-radius:4px}' +
 		'.kino-thumbs-range{accent-color:var(--kp-ember)}' +
-		'.kino-thumbs-link{color:var(--kp-link);text-decoration:none}.kino-thumbs-link:hover{text-decoration:underline}'
+		'.kino-thumbs-link{color:var(--kp-link);text-decoration:none}.kino-thumbs-link:hover{text-decoration:underline}' +
+		'@keyframes kino-thumbs-pulse{0%,100%{opacity:1}50%{opacity:.35}}.kino-thumbs-pulse{animation:kino-thumbs-pulse 1.4s ease-in-out infinite}'
 	document.head.appendChild(style)
 }
 
@@ -78,7 +80,7 @@ export const Btn = (props: { label: string; title?: string; onClick: () => void;
 		props.label,
 	)
 
-// Options share the track evenly, so the control never shows an empty grey tail
+// Options share the track evenly, so the control never shows an empty gray tail
 export const Segmented = (props: { value: string; options: { value: string; label: string; title?: string }[]; onChange: (value: string) => void; compact?: boolean }) =>
 	h(
 		'div',
@@ -142,23 +144,31 @@ export const Toggle = (props: { value: boolean; onChange: (value: boolean) => vo
 		props.label,
 	)
 
-// Swatches for the brand colours plus a free picker; empty means the element's default
-export const ColorIn = (props: { value?: string; onChange: (value: string | undefined) => void; swatches: { value: string; label: string }[] }) =>
-	h(
-		'div',
-		{ style: { display: 'flex', alignItems: 'center', gap: 4, height: 26, flexWrap: 'wrap' } },
+// Swatches for the brand colors plus a free picker; empty means the element's default.
+// A swatch's value is what gets stored (a brand token such as "accent"), css is how to paint it.
+export type Swatch = { value: string; label: string; css?: string }
+export const ColorIn = (props: { value?: string; onChange: (value: string | undefined) => void; swatches: Swatch[]; none?: boolean }) => {
+	const current = props.swatches.find(s => s.value.toLowerCase() === (props.value ?? '').toLowerCase())
+	const shown = current?.css ?? props.value ?? ''
+	const mini = (text: string, title: string, on: boolean, value: string | undefined) =>
 		h(
 			'button',
 			{
-				title: 'Default',
+				key: text,
+				title,
 				onClick: (event: any) => {
 					event.preventDefault()
-					props.onChange(undefined)
+					props.onChange(value)
 				},
-				style: { ...button, height: 20, lineHeight: '18px', padding: '0 6px', fontSize: 10, background: !props.value ? 'rgba(var(--kp-ink),0.14)' : button.background },
+				style: { ...button, height: 20, lineHeight: '18px', padding: '0 6px', fontSize: 10, background: on ? 'rgba(var(--kp-ink),0.14)' : button.background },
 			},
-			'Auto',
-		),
+			text,
+		)
+	return h(
+		'div',
+		{ style: { display: 'flex', alignItems: 'center', gap: 4, minHeight: 26, flexWrap: 'wrap' } },
+		mini('Auto', 'The default for this element', !props.value, undefined),
+		props.none ? mini('None', 'No fill', props.value === 'transparent', 'transparent') : null,
 		...props.swatches.map(s =>
 			h('button', {
 				key: s.value,
@@ -167,10 +177,42 @@ export const ColorIn = (props: { value?: string; onChange: (value: string | unde
 					event.preventDefault()
 					props.onChange(s.value)
 				},
-				style: { width: 18, height: 18, padding: 0, borderRadius: 4, cursor: 'pointer', background: s.value, border: props.value?.toLowerCase() === s.value.toLowerCase() ? '2px solid var(--kp-strong)' : '1px solid rgba(var(--kp-ink),0.25)' },
+				style: { width: 18, height: 18, padding: 0, borderRadius: 4, cursor: 'pointer', background: s.css ?? s.value, border: current === s ? '2px solid var(--kp-strong)' : '1px solid rgba(var(--kp-ink),0.25)' },
 			}),
 		),
-		h('input', { type: 'color', value: /^#[0-9a-f]{6}$/i.test(props.value ?? '') ? props.value : '#ffffff', onChange: (e: any) => props.onChange(e.target.value), title: 'Custom colour', style: { width: 22, height: 20, padding: 0, border: 'none', background: 'none', cursor: 'pointer' } }),
+		h('input', { type: 'color', value: /^#[0-9a-f]{6}$/i.test(shown) ? shown : '#ffffff', onChange: (e: any) => props.onChange(e.target.value), title: 'Custom color', style: { width: 22, height: 20, padding: 0, border: 'none', background: 'none', cursor: 'pointer' } }),
+	)
+}
+
+// Small rounded toggle, for quick prompts and platform choices
+export const Chip = (props: { on?: boolean; label: string; title?: string; onClick: () => void }) =>
+	h(
+		'button',
+		{
+			className: 'kino-thumbs-btn',
+			title: props.title,
+			onClick: (event: any) => {
+				event.preventDefault()
+				props.onClick()
+			},
+			style: {
+				height: 22,
+				padding: '0 9px',
+				borderRadius: 11,
+				fontSize: 11,
+				fontFamily: UI_FONT,
+				cursor: 'pointer',
+				flex: 'none',
+				maxWidth: '100%',
+				overflow: 'hidden',
+				textOverflow: 'ellipsis',
+				whiteSpace: 'nowrap',
+				border: `1px solid ${props.on ? 'rgba(255,138,31,.6)' : 'rgba(var(--kp-ink),.12)'}`,
+				background: props.on ? 'rgba(255,138,31,.14)' : 'rgba(var(--kp-ink),.03)',
+				color: props.on ? TEXT : DIM,
+			},
+		},
+		props.label,
 	)
 
 export const TextArea = (props: { value: string; onChange: (value: string) => void; placeholder?: string; rows?: number; autoFocus?: boolean }) =>
@@ -250,7 +292,7 @@ export const GUIDE: { title: string; items: { text: string; url?: string; source
 			{ text: 'The Shorts safe area leaves the top bar, the caption and nav at the bottom, and the action column on the right clear.', url: 'https://support.google.com/google-ads/answer/13547298', source: 'Google Ads Help' },
 			{ text: 'TikTok covers come from a frame of the video (the API takes a timestamp), so the hook belongs in frame 0.', url: 'https://developers.tiktok.com/doc/content-posting-api-reference-direct-post', source: 'TikTok for Developers' },
 			{ text: 'TikTok safe zone: keep text out of the right action rail and the bottom caption area.', url: 'https://ads.tiktok.com/help/article/tiktok-auction-in-feed-ads', source: 'TikTok Ads Help' },
-			{ text: 'Reels: 1080x1920, with the profile grid showing a centred 3:4 crop.', url: 'https://www.facebook.com/business/ads-guide/update/video/instagram-reels', source: 'Meta Ads Guide' },
+			{ text: 'Reels: 1080x1920, with the profile grid showing a centered 3:4 crop.', url: 'https://www.facebook.com/business/ads-guide/update/video/instagram-reels', source: 'Meta Ads Guide' },
 		],
 	},
 	{
@@ -274,8 +316,8 @@ export const GUIDE: { title: string; items: { text: string; url?: string; source
 			{ text: 'Most top-performing thumbnails use 0 to 4 words.', url: 'https://vidiq.com/research/youtube-thumbnail-study/', source: 'vidIQ research' },
 			{ text: 'Shocked faces appear on only about 1 in 10 covers across 100k channels: a clear subject beats a pulled face.', url: 'https://www.netinfluencer.com/youtube-thumbnail-study-of-100k-channels-finds-shocked-faces-on-just-1-in-10-covers/', source: 'NetInfluencer' },
 			{ text: 'One hero element with at most two supporting ones, high contrast, and an outline, shadow or box behind text.' },
-			{ text: 'Promise what the video delivers: here a 2 minute setup, players in Cyrodiil, and friends joining your server.' },
-			{ text: 'Avoid raw screenshots, arrows and red circles. YouTube UI is red, white and black, so a warm ember accent stands out.' },
+			{ text: 'Promise only what the video delivers early: every number, time and price on the image must be true.' },
+			{ text: 'Avoid raw screenshots, decorative arrows and red circles. YouTube UI is red, white and black, so an accent outside those colors stands out.' },
 		],
 	},
 ]

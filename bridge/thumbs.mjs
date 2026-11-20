@@ -100,7 +100,10 @@ const save = async body => {
 
   const dir = projectDir(body.projectId);
   fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, `${slug(body.name)}-${stamp()}.${format}`);
+  // "Export all" can save two designs with one name inside the same second: number the later ones
+  const stem = `${slug(body.name)}-${stamp()}`;
+  let file = path.join(dir, `${stem}.${format}`);
+  for (let n = 2; fs.existsSync(file) && n < 1000; n++) file = path.join(dir, `${stem}-${n}.${format}`);
   fs.writeFileSync(file, bytes, { flag: "wx" });
   const meta = {
     name: String(body.name ?? "").slice(0, 120),
@@ -140,11 +143,16 @@ const list = (projectId, limit = 60) => {
   return {
     dir,
     items: names
-      .map(name => {
+      .flatMap(name => {
         const file = path.join(dir, name);
-        const stat = fs.statSync(file);
+        let stat;
+        try {
+          stat = fs.statSync(file);
+        } catch {
+          return []; // deleted between the listing and now
+        }
         const meta = readSidecar(file) ?? {};
-        return {
+        return [{
           file,
           name,
           bytes: stat.size,
@@ -154,7 +162,7 @@ const list = (projectId, limit = 60) => {
           height: meta.height ?? null,
           title: meta.name ?? null,
           mediaId: meta.kino_media_id ?? null,
-        };
+        }];
       })
       .sort((a, b) => b.mtime - a.mtime)
       .slice(0, limit),
@@ -162,14 +170,16 @@ const list = (projectId, limit = 60) => {
 };
 
 // ---------- agent prompts ----------
-// The panel's "Generate with the agent" sends its brief here. It goes to the project's thumbnails chat
-// as a peer request (a durable queued turn), creating that chat first when the panel has none yet.
+// The panel's prompt bar and New set dialog send their requests here (the Publish panel uses the same route).
+// A request goes to the project's chat as a peer request (a durable queued turn); the chat is created
+// first when the panel has none yet.
 const CHAT_ID = /^[\w-]{6,200}$/;
 const findChatId = value => {
   if (!value) return null;
   if (typeof value === "string") return CHAT_ID.test(value) ? value : null;
   if (typeof value !== "object") return null;
-  for (const key of ["chatId", "conversationId", "id"]) if (typeof value[key] === "string" && CHAT_ID.test(value[key])) return value[key];
+  // Kino returns the id as a bare string under `result`: { actionId, ran, result: "<chatId>" }
+  for (const key of ["chatId", "conversationId", "id", "result"]) if (typeof value[key] === "string" && CHAT_ID.test(value[key])) return value[key];
   for (const v of Object.values(value)) {
     const found = typeof v === "object" ? findChatId(v) : null;
     if (found) return found;
@@ -237,7 +247,7 @@ export const handleThumbs = async (req, res, url, json, headers) => {
     if (req.method === "GET" && url.pathname === "/thumbs/file") {
       const file = inside(url.searchParams.get("path"));
       if (!file || !/\.(png|jpg)$/i.test(file) || !fs.existsSync(file)) return json(404, { error: "not found" });
-      res.writeHead(200, { ...headers, "content-type": file.endsWith(".png") ? "image/png" : "image/jpeg", "cache-control": "no-store" });
+      res.writeHead(200, { ...headers, "content-type": /\.png$/i.test(file) ? "image/png" : "image/jpeg", "cache-control": "no-store" });
       return fs.createReadStream(file).pipe(res);
     }
     if (req.method === "POST" && url.pathname === "/thumbs/reveal") {

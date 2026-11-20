@@ -1,53 +1,54 @@
-// Install the panels into a Kino project: npm run install-panels -- <projectId | project folder> [--update] [--dry-run]
+// Install the panels into Kino projects:
+//   npm run install-panels -- <projectId | project folder> [--update] [--dry-run]
+//   npm run install-panels -- --all [--update] [--dry-run]     every project Kino desktop has mounted
 //
 // - panels/ is copied to <project>/panels/ and replaces older copies (Kino keeps project history).
 // - panels/project.ts is written for that project (its id and folder), since panels cannot ask Kino for them.
-// - project/ (house skills, thumbnail model, art and ornaments) is added where missing. With --update it is
-//   refreshed too, except the user's own files: thumbs/designs.json, publish/plan.json, publish/copy.json
-//   and publish/knowledge/.
-import path from "node:path";
-import { GENERATED, PANELS_SRC, PROJECT_SRC, copyFile, flag, isDataFile, positional, report, resolveMount, walk, writeIfChanged } from "./lib.mjs";
+// - Code under project/ that the panels import (the thumbnail model and art) is replaced with the panels.
+// - Skill files (thumbs/skill, publish/skill) are added where missing. --update refreshes them.
+// - Your own files are added where missing and never overwritten: thumbs/designs.json, thumbs/brand.json,
+//   publish/plan.json, publish/copy.json and publish/knowledge/.
+//
+// The running bridge also installs into newly mounted projects on its own (bridge/autoinstall.mjs).
+import { MOUNTS_DIR } from "../bridge/platform.mjs";
+import { flag, installPanels, mountedProjects, positional, report, resolveMount } from "./lib.mjs";
 
 const dryRun = flag("dry-run");
 const update = flag("update");
+const USAGE = "Usage: npm run install-panels -- <projectId | project folder> [--update] [--dry-run]\n       npm run install-panels -- --all [--update] [--dry-run]";
 
-let target;
-try {
-  target = resolveMount(positional()[0]);
-} catch (error) {
-  console.error(error.message);
-  console.error("Usage: npm run install-panels -- <projectId | project folder> [--update] [--dry-run]");
-  process.exit(1);
-}
-const { id, mount, mounted } = target;
-if (!mounted) console.warn(`Note: ${mount} has no .kino-mount folder. Make sure it is the folder Kino desktop mounts for the project.`);
-
-const panelResults = [];
-for (const rel of walk(PANELS_SRC)) {
-  if (rel === GENERATED) continue;
-  panelResults.push([rel, copyFile(path.join(PANELS_SRC, rel), path.join(mount, "panels", rel), { overwrite: true, dryRun })]);
-}
-const projectTs =
-  "// Written by `npm run install-panels` for the Kino project the panels are installed into.\n" +
-  "// Panels have no project-id hook, so they fall back to these values.\n" +
-  `export const PROJECT_ID = ${JSON.stringify(id)}\n` +
-  `export const MOUNT_HINT = ${JSON.stringify(mount)}\n`;
-panelResults.push([GENERATED, writeIfChanged(path.join(mount, "panels", GENERATED), projectTs, { dryRun })]);
-
-const projectResults = [];
-for (const rel of walk(PROJECT_SRC)) {
-  const overwrite = update && !isDataFile(rel);
-  projectResults.push([rel, copyFile(path.join(PROJECT_SRC, rel), path.join(mount, rel), { overwrite, dryRun })]);
+let targets;
+if (flag("all")) {
+  targets = mountedProjects();
+  if (!targets.length) {
+    console.error(`No mounted Kino projects under ${MOUNTS_DIR}. Open a project in Kino desktop first, or set KINO_MOUNTS_DIR.`);
+    process.exit(1);
+  }
+} else {
+  try {
+    targets = [resolveMount(positional()[0])];
+  } catch (error) {
+    console.error(error.message);
+    console.error(USAGE);
+    process.exit(1);
+  }
 }
 
-console.log(`${dryRun ? "Dry run: would install" : "Installed"} into project ${id} (${mount})`);
-report("panels/", panelResults);
-report("project files", projectResults);
-const kept = projectResults.filter(([, state]) => state === "kept").length;
-if (kept) {
+let keptTotal = 0;
+for (const target of targets) {
+  const { id, mount, mounted } = target;
+  if (!mounted) console.warn(`Note: ${mount} has no .kino-mount folder. Make sure it is the folder Kino desktop mounts for the project.`);
+  const { panelResults, projectResults } = installPanels(target, { update, dryRun });
+  console.log(`${dryRun ? "Dry run: would install" : "Installed"} into project ${id} (${mount})`);
+  report("panels/", panelResults);
+  report("project files", projectResults);
+  keptTotal += projectResults.filter(([, state]) => state === "kept").length;
+  if (targets.length > 1) console.log("");
+}
+if (keptTotal) {
   console.log(
-    `\n${kept} project file(s) differ from the repo and were left alone.` +
-      (update ? " They hold your own work." : " Run again with --update to refresh skills and thumbnail code (your designs, plan, copy and knowledge stay)."),
+    `\n${keptTotal} project file(s) differ from the repo and were left alone.` +
+      (update ? " They hold your own work." : " Your own files always stay. To refresh the agent skills too, run again with --update."),
   );
 }
-console.log("\nIn Kino, open the panels from the project's panel list. Start the bridge first: npm start");
+console.log("\nIn Kino: turn on Settings > Experimental > Dynamic panels, then open a panel from the view's layout button > Panels.");

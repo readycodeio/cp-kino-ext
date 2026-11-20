@@ -1,6 +1,7 @@
 #!/bin/bash
-# Double-click in Finder to start the Kino bridge. Keep this window open while you use the panels;
-# press Ctrl+C here to stop it.
+# Double-click in Finder to run the Kino bridge in this window, with its log on screen. Keep the window
+# open while you use the panels; Ctrl+C stops it. For a bridge that runs in the background and starts at
+# login, use setup.command instead.
 cd "$(dirname "$0")" || exit 1
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 if ! command -v node >/dev/null 2>&1; then

@@ -1,5 +1,6 @@
-// Kino Terminal: your shell in a panel (zsh/bash on macOS, PowerShell on Windows), starting in the
-// current project's folder. Talks to the local bridge (cp-kino-ext, `npm start`) over ws://127.0.0.1:47680.
+// Kino Terminal: your shell in a panel (your login shell on macOS and Linux, PowerShell on Windows),
+// starting in the current project's folder. Talks to the local Kino bridge over a WebSocket (/pty).
+// The address and the pairing token come from ../bridge, shared with the other panels.
 // Written with createElement instead of JSX: panel JSX currently renders as plain objects (React #31).
 import { createElement as h, useEffect, useRef, useState } from 'react'
 import { usePanelSettings } from 'kino/panel'
@@ -7,10 +8,9 @@ import { Terminal } from '@xterm/xterm@6.0.0'
 import { FitAddon } from '@xterm/addon-fit@0.11.0'
 import { XTERM_CSS } from './xtermCss'
 import { useKinoTheme, type KinoTheme } from '../theme'
-import { IS_MAC, MACHINE, YOUR_MACHINE, FILE_MANAGER, PAIR_DIALOG, ALLOW, START_BRIDGE, START_BRIDGE_HINT, MONO_FONT, UI_FONT } from '../platform'
+import { IS_MAC, IS_WIN, FILE_MANAGER, MONO_FONT, UI_FONT } from '../platform'
+import { BridgeCard, bridgeUrl, bridgeWsUrl, clearToken, getToken, projectId, setToken } from '../bridge'
 
-const BRIDGE = '127.0.0.1:47680'
-const TOKEN_KEY = 'kino-terminal:token' // device-local, never stored in shared panel source or settings
 const STYLE_ID = 'kino-terminal-xterm-css'
 const FONT = MONO_FONT
 const MIN_FONT = 9
@@ -100,7 +100,6 @@ const ensureCss = () => {
 	document.head.appendChild(style)
 }
 
-const projectIdFromUrl = () => new URLSearchParams(window.location.search).get('project') ?? ''
 const tildify = (dir: string, home: string) => (home && dir.startsWith(home) ? `~${dir.slice(home.length)}` : dir)
 const electronShell = () =>
 	(window as unknown as { electron?: { shell?: { openPath?: (path: string) => unknown } } }).electron?.shell
@@ -109,6 +108,19 @@ const copyText = (text: string) => {
 		;(window as unknown as { electron?: { clipboard?: { writeText?: (t: string) => unknown } } }).electron?.clipboard?.writeText?.(text)
 	})
 }
+
+// "~/clips", "/tmp/x/" and "C:\\Work\\" in one comparable form, to tell whether the bridge used the start folder.
+const samePath = (a: string, b: string, home: string) => {
+	const norm = (value: string) => {
+		const full = home && /^~(?=$|[\\/])/.test(value) ? home + value.slice(1) : value
+		const trimmed = full.replace(/[\\/]+$/, '')
+		return IS_WIN ? trimmed.replace(/\//g, '\\').toLowerCase() : trimmed
+	}
+	return norm(a) === norm(b)
+}
+const dim = (text: string) => `\x1b[2m[${text}]\x1b[0m\r\n`
+// Mouse clicks on header buttons must not take keyboard focus away from the shell.
+const keepFocus = (event: { preventDefault: () => void }) => event.preventDefault()
 
 type Api = { pair: () => void; restart: () => void; retry: () => void }
 
@@ -126,16 +138,7 @@ const buttonStyle = {
 	flexShrink: 0,
 }
 
-const primaryButtonStyle = {
-	...buttonStyle,
-	height: 28,
-	padding: '0 14px',
-	background: 'var(--kp-text)',
-	color: 'var(--kp-bg)',
-	border: 'none',
-	fontWeight: 600,
-	fontSize: 12,
-}
+const quiet = (event: { stopPropagation: () => void }) => event.stopPropagation()
 
 export default function TerminalPanel() {
 	const [settings, setSettings] = usePanelSettings({ fontSize: 12, startDir: '' })
@@ -164,8 +167,8 @@ export default function TerminalPanel() {
 		ensureCss()
 		const host = hostRef.current
 		if (!host) return
-		const projectId = projectIdFromUrl()
-		const sessionKey = `kino-terminal:session:${projectId || 'none'}`
+		const project = projectId()
+		const sessionKey = `kino-terminal:session:${project || 'none'}`
 		const term = new Terminal({
 			fontFamily: FONT,
 			fontSize: settingsRef.current.fontSize,
@@ -210,26 +213,44 @@ export default function TerminalPanel() {
 			retryTimer = window.setTimeout(connect, Math.min(1000 * 2 ** Math.min(attempt, 4), 15000))
 		}
 
+		// The shell is gone and will not come back by itself: say why, then wait for a key press.
+		const stop = (reason: string) => {
+			sessionStorage.removeItem(sessionKey)
+			term.write(`\r\n${dim(reason)}`)
+			show('exited')
+		}
+
 		function connect() {
 			window.clearTimeout(retryTimer)
 			if (disposed) return
-			const token = localStorage.getItem(TOKEN_KEY)
+			// A connection is already open or on its way (Retry pressed twice, the token watcher below)
+			if (socket && socket.readyState <= WebSocket.OPEN) return
+			const token = getToken()
 			if (!token) return show('unpaired')
 			show('connecting')
 			safeFit()
 			let opened = false
-			const ws = new WebSocket(`ws://${BRIDGE}/pty`)
+			let ws: WebSocket
+			try {
+				ws = new WebSocket(bridgeWsUrl('/pty'))
+			} catch {
+				show('offline')
+				scheduleRetry()
+				return
+			}
 			ws.binaryType = 'arraybuffer'
 			socket = ws
+			const wanted = sessionStorage.getItem(sessionKey)
+			const startDir = settingsRef.current.startDir
 			ws.onopen = () => {
 				opened = true
 				ws.send(
 					JSON.stringify({
 						t: 'hello',
 						token,
-						sessionId: sessionStorage.getItem(sessionKey) ?? undefined,
-						projectId,
-						cwd: settingsRef.current.startDir || undefined,
+						sessionId: wanted ?? undefined,
+						projectId: project,
+						cwd: startDir || undefined,
 						cols: term.cols,
 						rows: term.rows,
 					}),
@@ -249,18 +270,23 @@ export default function TerminalPanel() {
 				if (message.t === 'ready') {
 					attempt = 0
 					sessionStorage.setItem(sessionKey, String(message.sessionId))
-					setCwd(String(message.cwd ?? ''))
-					setHome(String(message.home ?? ''))
+					const dir = String(message.cwd ?? '')
+					const homeDir = String(message.home ?? '')
+					setCwd(dir)
+					setHome(homeDir)
 					term.reset() // a resumed session replays its scrollback next
+					if (!message.resumed) {
+						// The old shell could not be picked up again: it ended, or the bridge restarted.
+						if (wanted) term.write(dim('new shell: the previous one is gone'))
+						// The bridge falls back quietly when the start folder does not exist.
+						if (startDir && dir && !samePath(startDir, dir, homeDir)) term.write(dim(`start folder not found: ${startDir}`))
+					}
 					show('connected')
 					safeFit()
 					send(JSON.stringify({ t: 'resize', cols: term.cols, rows: term.rows }))
 				} else if (message.t === 'exit') {
 					sessionStorage.removeItem(sessionKey)
-					if (!restartPending) {
-						term.write(`\r\n\x1b[2m[exited with code ${message.exitCode}. Press any key for a new shell]\x1b[0m\r\n`)
-						show('exited')
-					}
+					if (!restartPending) stop(`exited with code ${message.exitCode}. Press any key for a new shell`)
 				} else if (message.t === 'error') {
 					term.write(`\r\n\x1b[31m${String(message.message)}\x1b[0m\r\n`)
 				}
@@ -274,8 +300,14 @@ export default function TerminalPanel() {
 					sessionStorage.removeItem(sessionKey)
 					connect()
 				} else if (event.code === 4401) {
-					localStorage.removeItem(TOKEN_KEY)
-					show('unpaired', 'The bridge no longer recognises this pairing. Connect again.')
+					clearToken()
+					show('unpaired', 'The bridge no longer knows this pairing. Connect again.')
+				} else if (event.code === 4429) {
+					// Retrying would only fail again until a shell is closed
+					stop('The bridge has too many shells open. Close a Terminal panel you no longer need, then press any key')
+				} else if (event.code === 4500) {
+					// The shell could not start. The bridge printed why just above.
+					stop('Press any key to try again')
 				} else if (statusNow === 'exited') {
 					// wait for a key press
 				} else if (!opened) {
@@ -290,17 +322,22 @@ export default function TerminalPanel() {
 
 		const pair = () => {
 			show('pairing')
-			fetch(`http://${BRIDGE}/pair`, { method: 'POST' })
+			fetch(bridgeUrl('/pair'), { method: 'POST' })
 				.then(async response => {
 					const body = await response.json().catch(() => ({}))
+					if (disposed) return
 					if (response.ok && typeof body.token === 'string') {
-						localStorage.setItem(TOKEN_KEY, body.token)
+						setToken(body.token)
 						connect()
 					} else {
 						show('unpaired', typeof body.error === 'string' ? body.error : `Pairing failed (${response.status}).`)
 					}
 				})
-				.catch(() => show('offline'))
+				.catch(() => {
+					if (disposed) return
+					show('offline')
+					scheduleRetry()
+				})
 		}
 
 		const restart = () => {
@@ -380,12 +417,24 @@ export default function TerminalPanel() {
 		})
 		observer.observe(host)
 
+		// Pairing is shared: when another panel connects, this one follows without a click.
+		const tokenWatch = window.setInterval(() => {
+			if (statusNow === 'unpaired' && getToken()) connect()
+		}, 3000)
+		// Coming back to the window is a good moment to look for the bridge again.
+		const onVisible = () => {
+			if (document.visibilityState === 'visible' && statusNow === 'offline') connect()
+		}
+		document.addEventListener('visibilitychange', onVisible)
+
 		safeFit()
 		connect()
 
 		return () => {
 			disposed = true
 			window.clearTimeout(retryTimer)
+			window.clearInterval(tokenWatch)
+			document.removeEventListener('visibilitychange', onVisible)
 			cancelAnimationFrame(frame)
 			observer.disconnect()
 			keyEvents.forEach(name => host.removeEventListener(name, isolateKey))
@@ -451,13 +500,19 @@ export default function TerminalPanel() {
 			? h('input', {
 					autoFocus: true,
 					value: dirDraft,
-					placeholder: 'Start folder (empty = project folder)',
+					placeholder: 'Start folder, like ~/clips. Empty: the project folder. Enter starts a new shell there.',
 					onChange: (event: { target: { value: string } }) => setDirDraft(event.target.value),
 					onKeyDown: (event: { key: string; stopPropagation: () => void }) => {
 						event.stopPropagation()
 						if (event.key === 'Enter') saveStartDir()
 						if (event.key === 'Escape') setEditingDir(false)
 					},
+					// Typing or pasting a path here must not reach Kino's editor shortcuts or its clip paste
+					onKeyUp: quiet,
+					onKeyPress: quiet,
+					onCopy: quiet,
+					onCut: quiet,
+					onPaste: quiet,
 					onBlur: () => setEditingDir(false),
 					style: {
 						flex: 1,
@@ -477,8 +532,8 @@ export default function TerminalPanel() {
 					'span',
 					{
 						title: cwd
-							? `${cwd}\nStart folder: ${settings.startDir || 'project folder'} (click to change)`
-							: 'Click to set the start folder',
+							? `${cwd}\nStart folder: ${settings.startDir || 'project folder'}. Click to change it (starts a new shell).`
+							: 'Click to set the folder new shells start in',
 						onClick: () => {
 							setDirDraft(settings.startDir)
 							setEditingDir(true)
@@ -497,83 +552,44 @@ export default function TerminalPanel() {
 					},
 					h('bdi', null, label + (status !== 'connected' && cwd ? `  ·  ${STATUS_LABEL[status]}` : '')),
 				),
-		h('button', { title: 'Smaller text', onClick: () => setFontSize(-1), style: buttonStyle }, 'A−'),
-		h('button', { title: 'Larger text', onClick: () => setFontSize(1), style: buttonStyle }, 'A+'),
+		h('button', { title: `Smaller text (now ${settings.fontSize} px)`, onMouseDown: keepFocus, onClick: () => setFontSize(-1), style: buttonStyle }, 'A−'),
+		h('button', { title: `Larger text (now ${settings.fontSize} px)`, onMouseDown: keepFocus, onClick: () => setFontSize(1), style: buttonStyle }, 'A+'),
 		shell?.openPath && cwd
-			? h('button', { title: `Show this folder in ${FILE_MANAGER}`, onClick: () => shell.openPath?.(cwd), style: buttonStyle }, FILE_MANAGER)
+			? h('button', { title: `Show this folder in ${FILE_MANAGER}`, onMouseDown: keepFocus, onClick: () => shell.openPath?.(cwd), style: buttonStyle }, FILE_MANAGER)
 			: null,
 		h(
 			'button',
-			{ title: 'Close this shell and start a new one', onClick: () => apiRef.current?.restart(), style: buttonStyle },
+			{ title: 'Close this shell and start a new one', onMouseDown: keepFocus, onClick: () => apiRef.current?.restart(), style: buttonStyle },
 			'New',
 		),
 	)
 
-	const overlayCard = (title: string, body: unknown, action?: { label: string; onClick: () => void }) =>
-		h(
-			'div',
-			{
-				style: {
-					position: 'absolute',
-					inset: 0,
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					padding: 16,
-					background: 'rgba(var(--kp-bg-rgb),0.94)',
-					fontFamily: UI_FONT,
-				},
-			},
-			h(
-				'div',
-				{ style: { maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 10, color: 'rgba(var(--kp-ink),0.7)', fontSize: 12, lineHeight: 1.5 } },
-				h('div', { style: { color: 'var(--kp-strong)', fontSize: 14, fontWeight: 600 } }, title),
-				body,
-				note ? h('div', { style: { color: 'var(--kp-red)' } }, note) : null,
-				action ? h('div', null, h('button', { onClick: action.onClick, style: primaryButtonStyle }, action.label)) : null,
-			),
-		)
-
-	const code = (text: string) =>
-		h(
-			'code',
-			{
-				style: {
-					display: 'block',
-					padding: '6px 8px',
-					borderRadius: 5,
-					background: 'rgba(var(--kp-ink),0.06)',
-					fontFamily: FONT,
-					fontSize: 11,
-					color: 'var(--kp-text)',
-					userSelect: 'text' as const,
-					wordBreak: 'break-all' as const,
-				},
-			},
-			text,
-		)
-
+	// The shared card covers the shell while the bridge is away, unpaired or waiting for approval.
 	const overlay =
-		status === 'unpaired'
-			? overlayCard(
-					'Connect the terminal',
-					h('div', null, `Kino Terminal runs your shell through a small bridge on ${MACHINE}. Click Connect, then choose ${ALLOW} in the dialog that appears. You only do this once per computer.`),
-					{ label: 'Connect', onClick: () => apiRef.current?.pair() },
+		status === 'unpaired' || status === 'pairing' || status === 'offline'
+			? h(
+					'div',
+					{
+						style: {
+							position: 'absolute',
+							inset: 0,
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							padding: 16,
+							overflowY: 'auto' as const,
+							background: 'rgba(var(--kp-bg-rgb),0.94)',
+						},
+					},
+					h(BridgeCard, {
+						bridge: status,
+						note,
+						uses: 'The terminal',
+						onPair: () => apiRef.current?.pair(),
+						onRetry: () => apiRef.current?.retry(),
+					}),
 				)
-			: status === 'pairing'
-				? overlayCard(`Approve on ${YOUR_MACHINE}`, h('div', null, `Choose ${ALLOW} in ${PAIR_DIALOG}. It may be behind the Kino window.`))
-				: status === 'offline'
-					? overlayCard(
-							'Terminal bridge is not running',
-							h(
-								'div',
-								{ style: { display: 'flex', flexDirection: 'column', gap: 8 } },
-								h('div', null, `${START_BRIDGE_HINT} This panel reconnects by itself.`),
-								code(START_BRIDGE),
-							),
-							{ label: 'Retry now', onClick: () => apiRef.current?.retry() },
-						)
-					: null
+			: null
 
 	return h(
 		'div',

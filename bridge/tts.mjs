@@ -1,9 +1,16 @@
 // Voiceover (ElevenLabs) routes for the Kino bridge.
 //
 // The ElevenLabs key never enters this process: speech runs in a child worker (voice/tts-worker.mjs)
-// started with `node --env-file=<VOICE_DIR>/.env.local`, so only that child sees ELEVENLABS_API_KEY. Terminal shells spawned by the bridge never get it either.
+// started with `node --env-file=<VOICE_DIR>/.env.local`, so only that child sees ELEVENLABS_API_KEY.
+// Terminal shells spawned by the bridge never get it either.
 // Imports into Kino go through Kino's local MCP server (addMediaToKino + timelineEdit).
 // Every /tts/* route is token-gated by server.mjs before it reaches this module.
+//
+// Settings:
+// - <VOICE_DIR>/.env.local: ELEVENLABS_API_KEY, and optionally ELEVENLABS_VOICE_ID, ELEVENLABS_MODEL_ID,
+//   ELEVENLABS_OUTPUT_FORMAT as first-run defaults.
+// - VOICE_CONFIG (config.json): output_dir (the panel writes it, POST /tts/config), plus optional
+//   voice_id, model_id and output_format defaults. Takes go to Documents/ElevenLabs Voiceover by default.
 import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
@@ -11,7 +18,7 @@ import { spawn, execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { HOME, DOCUMENTS, VOICE_DIR, VOICE_CONFIG, childEnv, findBin, isInside, reveal } from "./platform.mjs";
+import { HOME, DOCUMENTS, VOICE_DIR, VOICE_CONFIG, IS_MAC, IS_WIN, childEnv, findBin, isInside, reveal } from "./platform.mjs";
 
 const WORKER = path.join(path.dirname(fileURLToPath(import.meta.url)), "voice", "tts-worker.mjs");
 const ENV_FILE = path.join(VOICE_DIR, ".env.local");
@@ -24,22 +31,64 @@ const AUDIO_TYPES = { mp3: "audio/mpeg", wav: "audio/wav", opus: "audio/ogg", og
 const PROJECT_ID = /^[A-Za-z0-9_-]{1,64}$/;
 const CACHE_MS = 10 * 60 * 1000;
 const PREVIEW_HOSTS = /(^|\.)(googleapis\.com|elevenlabs\.io|cloudfront\.net)$/;
+// One take can run up to 240 s in the worker and is retried once, so wait longer than that.
+const GENERATE_TIMEOUT_MS = 11 * 60 * 1000;
+const FFMPEG_INSTALL = IS_MAC ? "brew install ffmpeg" : IS_WIN ? "winget install Gyan.FFmpeg" : "sudo apt install ffmpeg";
 
 let log = () => {};
 export const setLogger = fn => (log = fn);
 const redact = text => String(text ?? "").replace(/sk_[A-Za-z0-9]{8,}/g, "sk_…").replace(/xi-api-key[^\n]*/gi, "xi-api-key …");
 
-const outputDir = () => {
+const fault = (message, status = 400) => Object.assign(new Error(message), { status });
+
+const readConfig = () => {
   try {
-    const dir = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8")).output_dir;
-    if (typeof dir === "string" && dir) return dir.replace(/^~(?=[\\/])/, HOME);
-  } catch {}
-  return DEFAULT_OUT;
+    const value = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  } catch {
+    return {};
+  }
+};
+const outputDir = () => {
+  const dir = readConfig().output_dir;
+  return typeof dir === "string" && dir ? dir.replace(/^~(?=[\\/])/, HOME) : DEFAULT_OUT;
+};
+
+/** Point new takes at another folder ("" goes back to the default). The worker reads it on its next run. */
+const setOutputDir = value => {
+  const raw = String(value ?? "").trim();
+  if (raw.length > 1000) throw fault("That path is too long.");
+  const next = readConfig();
+  if (!raw) delete next.output_dir;
+  else {
+    const expanded = raw.replace(/^~(?=$|[\\/])/, HOME);
+    if (!path.isAbsolute(expanded)) throw fault(`Use a full path, like ${DEFAULT_OUT}.`);
+    const dir = path.resolve(expanded);
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.accessSync(dir, fs.constants.W_OK);
+    } catch (error) {
+      throw fault(`Cannot write to ${dir} (${error.code ?? error.message}).`);
+    }
+    next.output_dir = dir;
+  }
+  fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
+  const temp = `${CONFIG_PATH}.tmp-${process.pid}`;
+  fs.writeFileSync(temp, `${JSON.stringify(next, null, 2)}\n`);
+  fs.renameSync(temp, CONFIG_PATH);
 };
 
 // ---------- worker (holds the ElevenLabs key) ----------
 let worker = null;
 let seq = 0;
+
+const envStamp = () => {
+  try {
+    return fs.statSync(ENV_FILE).mtimeMs;
+  } catch {
+    return 0;
+  }
+};
 
 const startWorker = () => {
   if (!fs.existsSync(WORKER)) throw new Error(`Missing ${WORKER}.`);
@@ -52,7 +101,15 @@ const startWorker = () => {
     windowsHide: true,
     stdio: ["pipe", "pipe", "pipe"],
   });
-  const state = { child, pending: new Map() };
+  const state = { child, pending: new Map(), envStamp: envStamp() };
+  const failAll = reason => {
+    if (worker === state) worker = null;
+    for (const entry of state.pending.values()) {
+      clearTimeout(entry.timer);
+      entry.reject(new Error(reason));
+    }
+    state.pending.clear();
+  };
   readline.createInterface({ input: child.stdout }).on("line", line => {
     let message;
     try {
@@ -65,28 +122,42 @@ const startWorker = () => {
     state.pending.delete(message.id);
     clearTimeout(entry.timer);
     if (message.ok) entry.resolve(message.result);
-    else entry.reject(new Error(message.error || "ElevenLabs request failed."));
+    else entry.reject(Object.assign(new Error(message.error || "ElevenLabs request failed."), { upstream: message.status ?? null }));
   });
+  // A worker that died between two requests must not take the bridge down with an unhandled EPIPE.
+  child.stdin.on("error", () => {});
   child.stderr.on("data", data => {
     const line = redact(data).trim();
     if (line) log("tts-worker-stderr", { line: line.slice(0, 400) });
   });
   child.on("exit", (code, signal) => {
-    if (worker === state) worker = null;
-    for (const entry of state.pending.values()) {
-      clearTimeout(entry.timer);
-      entry.reject(new Error(`The ElevenLabs worker stopped (${signal ?? code}).`));
-    }
-    state.pending.clear();
+    failAll(`The ElevenLabs worker stopped (${signal ?? code}).`);
     log("tts-worker-exit", { code, signal });
   });
-  child.on("error", error => log("tts-worker-error", { error: redact(error.message) }));
+  // No "exit" follows a failed spawn, so answer the waiting requests here.
+  child.on("error", error => {
+    failAll("The ElevenLabs worker could not start.");
+    log("tts-worker-error", { error: redact(error.message) });
+  });
   log("tts-worker-start", { pid: child.pid, envFile: args.length === 2 });
   return state;
 };
 
+const cache = new Map();
+
 const ask = (cmd, args = {}, timeout = 60_000) =>
   new Promise((resolve, reject) => {
+    // The worker reads the key file once, at start. When the file appears or changes, start a new worker,
+    // so connecting or replacing the key needs no bridge restart.
+    if (worker && worker.pending.size === 0 && worker.envStamp !== envStamp()) {
+      log("tts-worker-reload");
+      const old = worker;
+      worker = null;
+      cache.clear();
+      try {
+        old.child.kill();
+      } catch {}
+    }
     if (!worker) worker = startWorker();
     const state = worker;
     const id = ++seq;
@@ -98,7 +169,6 @@ const ask = (cmd, args = {}, timeout = 60_000) =>
     state.child.stdin.write(`${JSON.stringify({ id, cmd, args })}\n`);
   });
 
-const cache = new Map();
 const cached = async (key, fresh, load) => {
   const hit = cache.get(key);
   if (!fresh && hit && Date.now() - hit.at < CACHE_MS) return hit.value;
@@ -118,7 +188,7 @@ const kino = () => {
     return client;
   })().catch(error => {
     kinoPromise = null;
-    throw new Error(`Kino's local MCP server is not reachable at ${KINO_MCP_URL} (${error.message}).`);
+    throw new Error(`Could not reach Kino desktop at ${KINO_MCP_URL} (${error.message}). Importing needs the Kino desktop app open on this computer. The take is still saved in the folder.`);
   });
   return kinoPromise;
 };
@@ -189,7 +259,7 @@ const historyItem = (meta, file, mtime) => ({
   batch: meta.batch ?? `single:${file}`,
   take: meta.take ?? 1,
   takes: meta.takes ?? 1,
-  source: meta.source ?? "eleven-voice",
+  source: meta.source ?? null,
   mediaId: meta.kino_media_id ?? null,
   request: meta.request ?? null,
 });
@@ -265,7 +335,9 @@ const handleImport = async body => {
     frame = frame ?? Math.max(0, Math.round(Number(playhead.frame) || 0));
     fps = fps ?? (Number(playhead.fps) || 30);
   }
-  const seconds = meta?.duration_s ?? (await probeDuration(file));
+  // Sidecar first, then what the panel measured while decoding the take, then ffprobe.
+  const measured = Number(body.duration) > 0 && Number(body.duration) < 6 * 3600 ? Number(body.duration) : null;
+  const seconds = meta?.duration_s ?? measured ?? (await probeDuration(file));
   const insert = id =>
     kinoCall("timelineEdit", {
       projectId,
@@ -316,6 +388,21 @@ const readBody = (req, limit) =>
     req.on("error", reject);
   });
 
+let ffprobeFound = null;
+/** Whether ffprobe runs. Without it takes have no stored length and the panel measures them itself. */
+const hasFfprobe = () =>
+  ffprobeFound
+    ? Promise.resolve(true)
+    : new Promise(resolve =>
+        execFile(FFPROBE, ["-version"], { timeout: 15000, env: childEnv(), windowsHide: true }, error => {
+          ffprobeFound = !error;
+          resolve(ffprobeFound);
+        }),
+      );
+
+// Generations in flight, so a panel that was closed and reopened (or a second panel) can show them.
+const generating = new Map();
+
 const costFactorFor = async modelId => {
   try {
     const models = await cached("models", false, () => ask("models"));
@@ -332,7 +419,22 @@ export const handleTts = async (req, res, url, json, headers) => {
   try {
     if (route === "GET /tts/status") {
       const status = await ask("status");
-      return json(200, { ...status, envFile: fs.existsSync(ENV_FILE), voiceDir: VOICE_DIR, mcp: KINO_MCP_URL });
+      return json(200, {
+        ...status,
+        envFile: fs.existsSync(ENV_FILE),
+        voiceDir: VOICE_DIR,
+        configFile: CONFIG_PATH,
+        defaultDir: DEFAULT_OUT,
+        ffprobe: await hasFfprobe(),
+        ffprobeInstall: FFMPEG_INSTALL,
+        mcp: KINO_MCP_URL,
+      });
+    }
+    if (route === "POST /tts/config") {
+      const body = await readBody(req, 16 * 1024);
+      if (body.outputDir !== undefined) setOutputDir(body.outputDir);
+      log("tts-config", { outputDir: outputDir() });
+      return json(200, { outputDir: outputDir(), defaultDir: DEFAULT_OUT });
     }
     if (route === "GET /tts/voices") return json(200, { voices: await cached("voices", fresh, () => ask("voices")) });
     if (route === "GET /tts/models") return json(200, { models: await cached("models", fresh, () => ask("models")) });
@@ -346,7 +448,7 @@ export const handleTts = async (req, res, url, json, headers) => {
     if (route === "GET /tts/effects") return json(200, await cached("effects", fresh, () => ask("effects")));
     if (route === "GET /tts/history") {
       const limit = Math.min(Math.max(Number(url.searchParams.get("n")) || 120, 1), 400);
-      return json(200, { dir: outputDir(), items: listHistory(limit) });
+      return json(200, { dir: outputDir(), items: listHistory(limit), pending: [...generating.values()] });
     }
     if (route === "GET /tts/audio") {
       const file = insideOutput(String(url.searchParams.get("file") ?? ""));
@@ -358,7 +460,10 @@ export const handleTts = async (req, res, url, json, headers) => {
         "content-length": stat.size,
         "cache-control": "private, max-age=3600",
       });
-      fs.createReadStream(file).pipe(res);
+      // A file that vanishes mid-read must end this response, not the bridge.
+      fs.createReadStream(file)
+        .on("error", () => res.destroy())
+        .pipe(res);
       return;
     }
     if (route === "GET /tts/voice-preview") {
@@ -381,12 +486,27 @@ export const handleTts = async (req, res, url, json, headers) => {
       const estimate = Math.ceil(chars * (await costFactorFor(body.model_id)) * takes);
       const quota = await ask("quota").catch(() => null);
       const remaining = quota ? Math.max(0, quota.limit - quota.used) : null;
-      // Same rule as the elevenlabs-voice skill: confirm runs over 5,000 characters or 10% of what is left.
+      // Ask first for runs over 5,000 credits or 10% of what is left: one stray click should not cost that much.
       const needsConfirm = estimate > 5000 || (remaining !== null && estimate > remaining * 0.1);
-      if (remaining !== null && estimate > remaining) return json(402, { error: `This needs about ${estimate} characters and ${remaining} are left this cycle.`, estimate, remaining });
-      if (needsConfirm && body.confirmed !== true) return json(409, { needsConfirm: true, estimate, remaining });
+      if (remaining !== null && estimate > remaining) return json(402, { error: `This needs about ${estimate} credits and ${remaining} are left until the plan resets. Shorten the text or use fewer takes.`, estimate, remaining });
+      // A plain answer, not an error status: the panel has to read the numbers.
+      if (needsConfirm && body.confirmed !== true) return json(200, { needsConfirm: true, estimate, remaining });
       log("tts-generate", { chars, takes, estimate, model: body.model_id, voice: body.voice_id });
-      const result = await ask("generate", { ...body, takes }, 300_000);
+      const ticket = `g${++seq}`;
+      generating.set(ticket, {
+        id: ticket,
+        startedAt: Date.now(),
+        takes,
+        text: body.text.trim().slice(0, 400),
+        voiceName: typeof body.voice_name === "string" ? body.voice_name.slice(0, 120) : null,
+        modelId: typeof body.model_id === "string" ? body.model_id.slice(0, 64) : null,
+      });
+      let result;
+      try {
+        result = await ask("generate", { ...body, takes }, GENERATE_TIMEOUT_MS);
+      } finally {
+        generating.delete(ticket);
+      }
       const items = result.takes.map(take => (take.error ? take : historyItem(take, take.file, Date.now())));
       return json(200, { batch: result.batch, estimate, takes: items });
     }
@@ -398,7 +518,8 @@ export const handleTts = async (req, res, url, json, headers) => {
     }
     if (route === "POST /tts/reveal") {
       const body = await readBody(req, 16 * 1024);
-      const dir = outputDir();
+      // "keys" opens the folder the key file goes into, for the setup steps.
+      const dir = body.target === "keys" ? VOICE_DIR : outputDir();
       fs.mkdirSync(dir, { recursive: true });
       const target = body.file ? insideOutput(String(body.file)) : fs.realpathSync(dir);
       if (!target) return json(400, { error: "That file is not in the voiceover folder." });
@@ -409,8 +530,10 @@ export const handleTts = async (req, res, url, json, headers) => {
   } catch (error) {
     const message = redact(error?.message ?? String(error)).slice(0, 600) || "Request failed.";
     log("tts-error", { route, error: message.slice(0, 300) });
-    if (!res.headersSent) return json(error?.status ?? 502, { error: message });
-    res.destroy();
+    if (res.headersSent) return res.destroy();
+    // ElevenLabs turned the key down. 424, never 401: to a panel 401 means "this device is not paired".
+    if (error?.upstream === 401) return json(424, { error: "ElevenLabs did not accept the API key. Connect your account again, then press Check again.", keyRejected: true });
+    return json(error?.status ?? 502, { error: message });
   }
 };
 
