@@ -1505,6 +1505,16 @@ export default function VoiceoverPanel() {
 	// ---------- render: not ready ----------
 	// One card in place of the editor: the shared bridge card, or the ElevenLabs setup steps.
 	const voiceDir = status?.voiceDir || (IS_WIN ? '%LOCALAPPDATA%\\elevenlabs-voice' : '~/.local/share/elevenlabs-voice')
+	// The ElevenLabs CLI ships no win32-arm64 build and its npx launcher exits with "Unsupported platform".
+	// Windows on ARM runs the x64 build under emulation; npm needs --force to install it there.
+	// Relative paths after the cd keep these lines valid in both cmd and PowerShell.
+	const armWin = IS_WIN && status?.arch === 'arm64'
+	const onboardLines = armWin
+		? [
+				'npm install --prefix cli-x64 --force --no-save @elevenlabs/cli-win32-x64@latest',
+				'.\\cli-x64\\node_modules\\@elevenlabs\\cli-win32-x64\\elevenlabs.exe onboard connect --env-path .env.local',
+			]
+		: ['npx -y @elevenlabs/cli@latest onboard connect --env-path .env.local']
 	const setupCard = (title: string, ...children: unknown[]) =>
 		h(
 			'div',
@@ -1531,10 +1541,13 @@ export default function VoiceoverPanel() {
 						null,
 						keyRejected
 							? `The key saved on ${MACHINE} was turned down: it may have been revoked or replaced. Connect the account again in ${TERMINAL_APP}:`
-							: `Voiceover speaks with your own ElevenLabs account. The key stays in a file on ${MACHINE} that only the speech worker reads: it never reaches this panel. Run these two lines in ${TERMINAL_APP} and approve in the browser page that opens:`,
+							: `Voiceover speaks with your own ElevenLabs account. The key stays in a file on ${MACHINE} that only the speech worker reads: it never reaches this panel. Run these ${onboardLines.length === 1 ? 'two' : 'three'} lines in ${TERMINAL_APP} and approve in the browser page that opens:`,
 					),
+					armWin
+						? h('div', { style: { color: DIM } }, 'ElevenLabs has no setup tool for Windows on ARM, so these lines install the x64 one, which Windows runs under emulation.')
+						: null,
 					CodeLine(`cd "${voiceDir}"`, copied),
-					CodeLine('npx -y @elevenlabs/cli@latest onboard connect --env-path .env.local', copied),
+					...onboardLines.map(line => CodeLine(line, copied)),
 					h(
 						'div',
 						null,

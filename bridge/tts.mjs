@@ -423,6 +423,8 @@ export const handleTts = async (req, res, url, json, headers) => {
         ...status,
         envFile: fs.existsSync(ENV_FILE),
         voiceDir: VOICE_DIR,
+        // The ElevenLabs CLI has no win32-arm64 build, so the panel needs the CPU to pick the onboarding command.
+        arch: process.arch,
         configFile: CONFIG_PATH,
         defaultDir: DEFAULT_OUT,
         ffprobe: await hasFfprobe(),

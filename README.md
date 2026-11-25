@@ -97,6 +97,17 @@ cd "$env:LOCALAPPDATA\elevenlabs-voice"
 npx -y @elevenlabs/cli@latest onboard connect --env-path .env.local
 ```
 
+On Windows on ARM (Snapdragon and other ARM64 PCs), `npx` stops with `Unsupported platform: win32-arm64`: ElevenLabs ships no ARM64 build of its CLI. Install the x64 build, which Windows runs under emulation, and start it directly. `--force` is what lets npm install an x64 package on ARM64. In PowerShell (the last two lines also work in cmd, after `cd /d "%LOCALAPPDATA%\elevenlabs-voice"`):
+
+```powershell
+# Windows on ARM
+cd "$env:LOCALAPPDATA\elevenlabs-voice"
+npm install --prefix cli-x64 --force --no-save @elevenlabs/cli-win32-x64@latest
+.\cli-x64\node_modules\@elevenlabs\cli-win32-x64\elevenlabs.exe onboard connect --env-path .env.local
+```
+
+The Voiceover panel shows these lines by itself when the bridge runs on Windows ARM64.
+
 Then press **Check again** in the Voiceover panel. Every take uses characters from your ElevenLabs plan; the panel shows the count before you generate.
 
 ## Publishing key
@@ -114,6 +125,7 @@ Posting goes through Zernio, a social posting API. Paste your Zernio API key in 
 | macOS says a background item was added, or asks to let "node" access Documents or Downloads | Expected the first time. The bridge saves renders, voiceovers and downloads there |
 | A tool is "missing" in a panel | `npm run doctor` names it and the install command. After installing, `npm run service -- restart` |
 | Panels are not in a project's panel list | Open the project in Kino desktop once, then `npm run install-panels -- --all` |
+| `Unsupported platform: win32-arm64` from the ElevenLabs CLI | Windows on ARM: use the x64 commands under [Voiceover key](#voiceover-key) |
 | Panels broke after you changed Node versions | `npm run setup` again. The service remembers the path to `node` |
 
 ## Known limits
