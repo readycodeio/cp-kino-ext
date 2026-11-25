@@ -51,6 +51,8 @@ export type Status = {
 	outputDir?: string
 	sdk?: string
 	voiceDir?: string
+	/** The bridge's process.arch. Bridges before this field omit it. */
+	arch?: string
 	defaults?: { voiceId?: string | null; modelId?: string | null; outputFormat?: string | null }
 	configFile?: string
 	defaultDir?: string

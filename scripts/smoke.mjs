@@ -166,7 +166,7 @@ try {
   check("publish: posting needs an explicit confirm", (await request(PORT, "/zernio/posts/create", { method: "POST", token, body: {} })).status === 400);
 
   const tts = await request(PORT, "/tts/status", { token, timeout: 30_000 });
-  check("voiceover worker starts", tts.status === 200 && tts.json?.hasKey === false && tts.json?.envFile === false, `sdk ${tts.json?.sdk ?? "?"}, voiceDir ${tts.json?.voiceDir}`);
+  check("voiceover worker starts", tts.status === 200 && tts.json?.hasKey === false && tts.json?.envFile === false && tts.json?.arch === process.arch, `sdk ${tts.json?.sdk ?? "?"}, voiceDir ${tts.json?.voiceDir}`);
 
   const ytdl = await request(PORT, "/ytdl/status", { token, timeout: 30_000 });
   check("yt downloader status", ytdl.status === 200 && ytdl.json?.ok === true, `yt-dlp ${ytdl.json?.ytdlp ?? "not installed"}`);
